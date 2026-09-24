@@ -94,11 +94,16 @@ export function loadServerConfig(env: NodeJS.ProcessEnv = process.env): ServerCo
     if (!httpUrl) throw new Error("Set TRIAGE_HTTP_URL when TRIAGE_CLASSIFIER is http.")
     classifier = new HttpProvider({ url: httpUrl, headers, timeoutMs })
   } else {
-    if (!httpUrl) throw new Error("Set TRIAGE_HTTP_URL when TRIAGE_CLASSIFIER is jev.")
-    console.warn(
-      "Jev request and response mapping is still a TODO. /classify will fail closed until you pass map functions. See docs/providers.md.",
-    )
-    classifier = new JevProvider({ url: httpUrl, headers, timeoutMs })
+    const jevHeaders = { ...headers }
+    const hasAuth = Object.keys(jevHeaders).some((key) => key.toLowerCase() === "authorization")
+    if (!hasAuth && env.TYPESAFE_API_KEY) {
+      jevHeaders.authorization = `Bearer ${env.TYPESAFE_API_KEY}`
+    }
+    classifier = new JevProvider({
+      url: httpUrl,
+      headers: jevHeaders,
+      timeoutMs: timeoutMs ?? 8000,
+    })
   }
 
   const policyInput: Record<string, unknown> = {

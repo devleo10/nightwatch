@@ -56,7 +56,7 @@ Use `RulesProvider` unless the user asked for something else. Built-in matches c
 
 `HttpProvider` posts the failure JSON and expects `{ decision, confidence, reason, delayMs?, provider? }`. `decision` is `retry_now`, `retry_later`, `dead_letter`, or `page_human`.
 
-`JevProvider` is a stub. `toJevRequest` and `fromJevResponse` throw until the caller passes `map`. Do not invent a TypeSafe request or response body. `TRIAGE_CLASSIFIER=jev` starts the server and fails closed on each call. No Jev API key is required for the default rules path.
+`JevProvider` is the showcase path. It posts one System One Choice to `https://api.typesafe.ai/v1/systemone` (`jev-latest`) and reads `answers.action.choice` plus `answers.action.confidence`. Pass `headers.authorization` as `Bearer $TYPESAFE_API_KEY`. Do not invent a second request shape. A thrown call becomes `fallback` and BullMQ keeps the job. The demo uses Jev when `TYPESAFE_API_KEY` is set, and falls through to `RulesProvider` if that call fails.
 
 ## Secrets
 

@@ -28,4 +28,4 @@ The demo app is ignored by changesets.
 
 `npm run lint` typechecks the packages and lints the demo. `npm test` runs unit tests. `npm run test:integration` runs the Redis cases.
 
-Please do not invent request or response shapes for external classifiers. Jev mapping stays a TODO until the API format is known.
+The Jev mapping is the published System One Choice contract. Do not replace it with a guessed body.

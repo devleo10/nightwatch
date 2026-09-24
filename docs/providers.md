@@ -39,23 +39,16 @@ const classifier = new ChainProvider(
 
 ## Jev
 
-`JevProvider` is a thin wrapper on `HttpProvider` for TypeSafe's Jev model. The request and response mapping is intentionally empty. Fill in `toJevRequest` and `fromJevResponse` in `@devleo10/nightwatch-core`, or pass `map` when you construct the provider, once you have the API format. Do not guess it.
+`JevProvider` posts one [System One](https://docs.typesafe.ai/introduction/quickstart) Choice to `https://api.typesafe.ai/v1/systemone`. The model is `jev-latest`. The options are `retry_now`, `retry_later`, `dead_letter`, and `page_human`. Confidence is the number Jev returns on the winning label. Nightwatch still decides whether to act.
+
+Get a key from the TypeSafe dashboard, then:
 
 ```ts
 import { JevProvider } from "@devleo10/nightwatch-core"
 
 const classifier = new JevProvider({
-  url: process.env.JEV_URL ?? "",
-  headers: { authorization: `Bearer ${process.env.JEV_API_KEY ?? ""}` },
-  map: {
-    toRequest(_failure) {
-      throw new Error("TODO: return the Jev request body. Do not guess the format.")
-    },
-    fromResponse(_body, _input, _latencyMs) {
-      throw new Error("TODO: map the Jev response onto a Result.")
-    },
-  },
+  headers: { authorization: `Bearer ${process.env.TYPESAFE_API_KEY}` },
 })
 ```
 
-Until that mapping exists, classification throws a clear error and policy falls back to normal BullMQ behavior.
+A missing key, a non-JSON body, or an unknown label throws. Policy then leaves the job to BullMQ. Put `RulesProvider` after `JevProvider` in a `ChainProvider` if you want that fallback inside the classifier instead.

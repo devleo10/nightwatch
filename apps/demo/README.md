@@ -1,6 +1,6 @@
 # Nightwatch demo
 
-A generated BullMQ queue and a dashboard. It does not read an existing production queue.
+A generated BullMQ queue judged by TypeSafe Jev, then shown on a dashboard. It does not read an existing production queue. Set `TYPESAFE_API_KEY` in the repo `.env`. Without that key the demo uses the built-in rules.
 
 From the repo root:
 

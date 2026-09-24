@@ -33,7 +33,7 @@ Environment variables override a JSON file at `TRIAGE_CONFIG`.
 | `TRIAGE_TIMEOUT_MS` | Default 1500. |
 | `TRIAGE_NEVER_AUTO_HANDLE` | Comma separated job names or `/regex/` patterns. |
 
-`jev` starts, and warns that request mapping is still a TODO. Calls fail closed until you supply `map`.
+`jev` calls `https://api.typesafe.ai/v1/systemone` unless `TRIAGE_HTTP_URL` is set. Set `TYPESAFE_API_KEY`, or pass an `authorization` header in `TRIAGE_HTTP_HEADERS`. A failed call leaves the job to BullMQ.
 
 ## Docker
 

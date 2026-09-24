@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Nightwatch",
-  description: "Live classification of failed background jobs",
+  description: "Failed BullMQ jobs judged by TypeSafe Jev",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -1,8 +1,17 @@
 import { Queue, Worker } from "bullmq"
 import cors from "cors"
 import express from "express"
+import { existsSync } from "node:fs"
 import net from "node:net"
-import { RulesProvider, type PolicyOptions } from "@devleo10/nightwatch-core"
+import { dirname, resolve } from "node:path"
+import { fileURLToPath } from "node:url"
+import {
+  ChainProvider,
+  JevProvider,
+  RulesProvider,
+  type Classifier,
+  type PolicyOptions,
+} from "@devleo10/nightwatch-core"
 import { withTriage, type TriageOptions } from "@devleo10/nightwatch/bullmq"
 import type { DecisionRecord } from "@devleo10/nightwatch-core"
 import { createDemoJob, type DemoJob } from "./jobs.js"
@@ -14,12 +23,30 @@ const connection = {
   maxRetriesPerRequest: null,
 }
 
+const envFile = resolve(dirname(fileURLToPath(import.meta.url)), "../../../.env")
+if (existsSync(envFile)) process.loadEnvFile(envFile)
+
+const jevKey = process.env.TYPESAFE_API_KEY
+const rules = new RulesProvider()
+const classifier: Classifier = jevKey
+  ? new ChainProvider(
+      [
+        new JevProvider({
+          headers: { authorization: `Bearer ${jevKey}` },
+          timeoutMs: 6000,
+        }),
+        rules,
+      ],
+      { timeoutMs: 7000 },
+    )
+  : rules
+
 const QUEUE_NAME = "nightwatch"
 const policy: PolicyOptions = {
   dryRun: true,
   minConfidence: 0.8,
   maxAutoRetries: 3,
-  timeoutMs: 1500,
+  timeoutMs: jevKey ? 8000 : 1500,
 }
 
 const counters = {
@@ -78,7 +105,7 @@ function publish(record: DecisionRecord) {
 }
 
 const triageOptions: TriageOptions<DemoJob> = {
-  classifier: new RulesProvider(),
+  classifier,
   policy,
   onDecision: publish,
 }
@@ -124,7 +151,7 @@ function snapshot(): Stats {
     escalated: counters.escalated,
     deadLettered: counters.deadLettered,
     averageLatencyMs: counters.totalFailures === 0 ? 0 : Math.round(counters.latencySum / counters.totalFailures),
-    provider: "rules",
+    provider: jevKey ? "jev" : "rules",
     producerRunning,
     speed,
     dryRun: policy.dryRun !== false,

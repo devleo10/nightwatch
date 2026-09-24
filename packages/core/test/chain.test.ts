@@ -70,16 +70,37 @@ describe("ChainProvider", () => {
 })
 
 describe("JevProvider", () => {
-  it("does not call the network until request mapping is filled in", async () => {
-    let called = false
+  it("sends a System One Choice and maps the winning label", async () => {
+    let body: unknown
     const provider = new JevProvider({
-      url: "https://example.invalid/jev",
-      fetchImpl: async () => {
-        called = true
-        return new Response("{}", { status: 200 })
+      url: "https://example.invalid/v1/systemone",
+      fetchImpl: async (_url, init) => {
+        body = JSON.parse(String(init?.body))
+        return new Response(
+          JSON.stringify({
+            model: "jev-latest",
+            answers: {
+              action: {
+                type: "choice",
+                choice: "dead_letter",
+                confidence: 0.96,
+                probabilities: { dead_letter: 0.96, page_human: 0.04 },
+              },
+            },
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        )
       },
     })
-    await expect(provider.classify(failure)).rejects.toThrow(/Jev request mapping is not implemented/)
-    expect(called).toBe(false)
+
+    await expect(provider.classify(failure)).resolves.toMatchObject({
+      decision: "dead_letter",
+      confidence: 0.96,
+      provider: "jev",
+    })
+    expect(body).toMatchObject({
+      model: "jev-latest",
+      questions: { action: { type: "choice" } },
+    })
   })
 })
