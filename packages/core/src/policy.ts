@@ -129,6 +129,7 @@ export function applyPolicy(input: {
   options?: PolicyOptions
   autoRetries?: number
   classifierError?: unknown
+  retrySafe?: boolean
 }): PolicyOutcome {
   const policy = resolvePolicy(input.options)
   const autoRetries = input.autoRetries ?? 0
@@ -166,6 +167,17 @@ export function applyPolicy(input: {
       dryRun: policy.dryRun,
       delayMs: laterDelay(result, input.failure),
       reason: `Job "${input.failure.jobName}" is in neverAutoHandle. Logged the decision and left BullMQ behavior unchanged.`,
+    }
+  }
+
+  const isRetryDecision = result.decision === "retry_now" || result.decision === "retry_later"
+  if (isRetryDecision && input.retrySafe === false) {
+    return {
+      action: "fallback",
+      applied: false,
+      escalated: true,
+      dryRun: policy.dryRun,
+      reason: `${result.decision} was not applied because retrySafe returned false. Nightwatch adds no retry. BullMQ attempts still apply.`,
     }
   }
 

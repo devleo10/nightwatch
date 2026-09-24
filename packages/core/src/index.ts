@@ -3,7 +3,7 @@ export { DECISIONS, failureSchema, formatZodError } from "./types.js"
 
 export { ClassifierError, ClassifierTimeoutError, withTimeout } from "./errors.js"
 
-export { redactFailure, redactText, redactValue } from "./redact.js"
+export { REDACT_PATTERNS, redactFailure, redactText, redactValue } from "./redact.js"
 
 export type { PolicyAction, PolicyOptions, PolicyOutcome, ResolvedPolicy } from "./policy.js"
 export { applyPolicy, matchesNeverAutoHandle, parsePolicyConfig, resolvePolicy } from "./policy.js"

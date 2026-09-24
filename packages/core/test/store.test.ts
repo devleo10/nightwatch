@@ -6,6 +6,7 @@ import {
   JsonlDecisionStore,
   MemoryDecisionStore,
   readRecentDecisions,
+  REDACT_PATTERNS,
   redactFailure,
   type DecisionRecord,
   type Failure,
@@ -48,6 +49,18 @@ describe("redact", () => {
     expect(redacted.payloadSummary).toContain("pan_number: [redacted]")
     expect(redacted.payloadSummary).toContain("token=[redacted]")
     expect(redacted.errorMessage).toBe(failure.errorMessage)
+  })
+
+  it("applies keys and patterns to the error message", () => {
+    const redacted = redactFailure(
+      {
+        ...failure,
+        errorMessage: "Telegram 400 for chat 1234567890 (a.user@example.com, +91 98765 43210) token=abc",
+      },
+      ["token"],
+      [REDACT_PATTERNS.email, REDACT_PATTERNS.phone, REDACT_PATTERNS.longNumber],
+    )
+    expect(redacted.errorMessage).toBe("Telegram 400 for chat [redacted] ([redacted], [redacted]) token=[redacted]")
   })
 })
 
