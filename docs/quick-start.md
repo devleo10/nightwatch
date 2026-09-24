@@ -1,5 +1,7 @@
 # Quick start
 
+The defaults that leave a queue unchanged are listed in [AGENTS.md](../AGENTS.md). The sample below turns dry run off. Omit `policy` to log decisions only.
+
 Requires Node.js 20 or newer and BullMQ 5 or newer. The adapter was checked against BullMQ 5.81.5.
 
 ```bash

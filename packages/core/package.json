@@ -1,8 +1,13 @@
 {
   "name": "@devleo10/nightwatch-core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Classifier interface, safety policy, and decision log for Nightwatch.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devleo10/nightwatch.git",
+    "directory": "packages/core"
+  },
   "type": "module",
   "sideEffects": false,
   "files": ["dist"],

@@ -1,8 +1,13 @@
 {
   "name": "@devleo10/nightwatch",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "BullMQ adapter for Nightwatch. Import it from @devleo10/nightwatch/bullmq.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devleo10/nightwatch.git",
+    "directory": "packages/bullmq"
+  },
   "type": "module",
   "sideEffects": false,
   "files": ["dist"],
@@ -44,7 +49,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@devleo10/nightwatch-core": "0.1.0"
+    "@devleo10/nightwatch-core": "0.1.1"
   },
   "peerDependencies": {
     "bullmq": ">=5.0.0"

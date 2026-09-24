@@ -1,8 +1,13 @@
 {
   "name": "@devleo10/nightwatch-server",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Optional HTTP service for Nightwatch classification.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devleo10/nightwatch.git",
+    "directory": "packages/server"
+  },
   "type": "module",
   "sideEffects": false,
   "files": ["dist"],
@@ -36,7 +41,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@devleo10/nightwatch-core": "0.1.0",
+    "@devleo10/nightwatch-core": "0.1.1",
     "express": "^4.21.2",
     "zod": "^3.25.76"
   },
