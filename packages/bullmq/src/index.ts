@@ -1,4 +1,5 @@
 export {
+  CascadeProvider,
   ChainProvider,
   HttpProvider,
   JevProvider,
@@ -121,6 +122,13 @@ export function failureFromJob(job: Job, error: Error, summary?: string): Failur
   }
 }
 
+let dryRunNoticeShown = false
+
+function effectivePolicy(policy: PolicyOptions | undefined, classifier: Classifier): PolicyOptions {
+  if (policy?.timeoutMs !== undefined || !classifier.suggestedTimeoutMs) return policy ?? {}
+  return { ...policy, timeoutMs: classifier.suggestedTimeoutMs }
+}
+
 async function runHook(label: string, hook?: () => void | Promise<void>): Promise<void> {
   if (!hook) return
   try {
@@ -140,14 +148,20 @@ export function withTriage<DataType = unknown, ResultType = unknown, NameType ex
   if (!options?.classifier || typeof options.classifier.classify !== "function") {
     throw new Error("withTriage requires a classifier with a classify function.")
   }
-  resolvePolicy(options.policy)
+  if (resolvePolicy(options.policy).dryRun && !dryRunNoticeShown) {
+    dryRunNoticeShown = true
+    console.info(
+      "nightwatch: dry run is on. Decisions are logged and BullMQ handles every failure until policy.dryRun is false.",
+    )
+  }
 
   return async (job, token, signal) => {
     try {
       return await processor(job, token, signal)
     } catch (caught) {
       const original = asError(caught)
-      const policy = resolvePolicy(options.policy)
+      const policyOptions = effectivePolicy(options.policy, options.classifier)
+      const policy = resolvePolicy(policyOptions)
       const keys = options.redact?.keys ?? []
       const summary = options.payloadSummary ? options.payloadSummary(job) : undefined
       const failure = redactFailure(failureFromJob(job, original, summary), keys)
@@ -164,7 +178,7 @@ export function withTriage<DataType = unknown, ResultType = unknown, NameType ex
       let plan = applyPolicy({
         failure,
         result,
-        options: options.policy,
+        options: policyOptions,
         autoRetries,
         classifierError,
       })
