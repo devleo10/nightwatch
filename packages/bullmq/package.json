@@ -1,6 +1,6 @@
 {
   "name": "@devleo10/nightwatch-bullmq",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Decide what to do with a failed BullMQ job: rules first, TypeSafe Jev for the rest. Includes the nightwatch scan command.",
   "keywords": [
     "bullmq",
@@ -53,7 +53,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@devleo10/nightwatch-classifier": "0.1.1",
+    "@devleo10/nightwatch-classifier": "0.1.2",
     "ioredis": "^5.11.1"
   },
   "peerDependencies": {

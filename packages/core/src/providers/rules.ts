@@ -15,11 +15,54 @@ export type RulesProviderOptions = {
 
 const BUILTIN_RULES: Rule[] = [
   {
+    match: /throttl|sending rate exceeded|maximum send rate/i,
+    decision: "retry_later",
+    delayMs: 60_000,
+    confidence: 0.94,
+    reason: "The provider is throttling sends.",
+  },
+  {
     match: /429|rate limit|too many requests/i,
     decision: "retry_later",
     delayMs: 30_000,
     confidence: 0.93,
     reason: "Rate limited by an upstream service.",
+  },
+  {
+    match: /\b401\b|\b403\b|unauthorized|forbidden|access denied/i,
+    decision: "page_human",
+    confidence: 0.91,
+    reason: "Auth or permission was denied.",
+  },
+  {
+    match: /\b400\b|bad request|\b422\b|unprocessable/i,
+    decision: "dead_letter",
+    confidence: 0.92,
+    reason: "The request was rejected as invalid.",
+  },
+  {
+    match: /messagerejected|invalid whatsapp|not a valid whatsapp|invalid phone number/i,
+    decision: "dead_letter",
+    confidence: 0.96,
+    reason: "The provider rejected the recipient or message.",
+  },
+  {
+    match: /missing dispatch|dispatchid.*not found|dispatch not found|unknown dispatch/i,
+    decision: "dead_letter",
+    confidence: 0.97,
+    reason: "The dispatch record is missing or unknown.",
+  },
+  {
+    match: /blocked the bot|bot was blocked|user has blocked|chat not found|bot not started/i,
+    decision: "dead_letter",
+    confidence: 0.9,
+    reason: "The channel is blocked or not reachable.",
+  },
+  {
+    match: /empty response from wati/i,
+    decision: "page_human",
+    confidence: 0.88,
+    reason: "WATI returned an empty auth response.",
   },
   {
     match: /ETIMEDOUT|timed out|timeout/i,

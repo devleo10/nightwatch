@@ -42,7 +42,18 @@ With TYPESAFE_API_KEY set, rules answer first and Jev answers what they are unsu
 
 const CONNECT_TIMEOUT_MS = 10_000
 
-const DEFAULT_REDACT = ["token", "authorization", "password", "secret", "email", "apiKey"]
+const DEFAULT_REDACT = [
+  "token",
+  "authorization",
+  "password",
+  "secret",
+  "email",
+  "apiKey",
+  "userId",
+  "telegramChatId",
+  "phoneOverride",
+  "dispatchId",
+]
 
 type Row = {
   queue: string
@@ -215,6 +226,7 @@ async function scan(argv: string[]): Promise<void> {
         const failure: Failure = redactFailure(failureFromJob(job, error), redactKeys, [
           REDACT_PATTERNS.email,
           REDACT_PATTERNS.phone,
+          REDACT_PATTERNS.longNumber,
         ])
         failure.attempt = Math.max(1, job.attemptsMade)
         let result: Result | null = null

@@ -62,6 +62,15 @@ describe("redact", () => {
     )
     expect(redacted.errorMessage).toBe("Telegram 400 for chat [redacted] ([redacted], [redacted]) token=[redacted]")
   })
+
+  it("redacts unquoted numeric JSON values for configured keys", () => {
+    const redacted = redactFailure(
+      { ...failure, payloadSummary: '{"telegramChatId": -1001234567890, "dispatchId": 42}' },
+      ["telegramChatId", "dispatchId"],
+      [],
+    )
+    expect(redacted.payloadSummary).toBe('{"telegramChatId": [redacted], "dispatchId": [redacted]}')
+  })
 })
 
 describe("decision stores", () => {

@@ -21,6 +21,13 @@ describe("RulesProvider", () => {
     ["Expired auth token", "AUTH_EXPIRED", "retry_now"],
     ["Duplicate transaction id", "DUPLICATE_TXN", "page_human"],
     ["Invalid HMAC signature", "INVALID_HMAC", "page_human"],
+    ["HTTP 401 Unauthorized from WATI", "HTTP_401", "page_human"],
+    ["SES MessageRejected: Invalid destination", "MessageRejected", "dead_letter"],
+    ["SES Throttling: Maximum sending rate exceeded", "Throttling", "retry_later"],
+    ["Invalid WhatsApp number", "INVALID_RECIPIENT", "dead_letter"],
+    ["missing dispatchId in payload", "DISPATCH", "dead_letter"],
+    ["User blocked the bot", "BLOCKED", "dead_letter"],
+    ["Empty response from WATI", "WATI", "page_human"],
   ] as const)("maps %s to %s", async (message, code, decision) => {
     const result = await provider.classify({
       ...base,

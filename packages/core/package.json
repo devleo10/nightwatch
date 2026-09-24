@@ -1,6 +1,6 @@
 {
   "name": "@devleo10/nightwatch-classifier",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Classifier interface, safety policy, and decision log for Nightwatch.",
   "license": "MIT",
   "repository": {

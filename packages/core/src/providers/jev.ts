@@ -12,13 +12,13 @@ export type JevMapper = {
 
 const CRITERIA = {
   retry_now:
-    "Transient failure that should be retried immediately: connection reset, or an expired auth token.",
+    "Transient failure that should be retried immediately: connection reset, or an expired auth token that can be refreshed.",
   retry_later:
-    "Temporary upstream failure that should wait before another try: HTTP 429, HTTP 500, or a timeout.",
+    "Temporary upstream failure that should wait before another try: HTTP 429, HTTP 500, provider throttling, or a timeout.",
   dead_letter:
-    "Permanent payload problem that will fail the same way on every retry: malformed JSON, schema validation, or a null required field.",
+    "Permanent problem with the job data or recipient that will not fix itself on retry: malformed JSON, validation failure, invalid phone or WhatsApp number, missing dispatch id, or provider MessageRejected.",
   page_human:
-    "A person must look: invalid signature, duplicate transaction, or anything that is not clearly a retry or a dead letter.",
+    "A person must decide: HTTP 401 or 403, invalid signature, duplicate transaction, blocked bot, or any error that is not clearly transient and not a bad payload.",
 } as const
 
 /**
@@ -41,7 +41,7 @@ export function toJevRequest(input: Failure): unknown {
       action: {
         type: "choice",
         instructions:
-          "Which action should the queue take for this failed background job? Pick one of the four labels.",
+          "Which action should the queue take for this failed background job? Pick one of the four labels. Running out of attempts does not by itself mean dead_letter. Use page_human for auth and permission failures unless the payload is clearly invalid.",
         criteria: CRITERIA,
       },
     },

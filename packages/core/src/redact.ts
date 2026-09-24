@@ -39,6 +39,11 @@ export function redactText(text: string, keys: readonly string[], patterns: read
       new RegExp(`("${escaped}"\\s*:\\s*)"(?:\\\\.|[^"\\\\])*"`, "g"),
       `$1"[redacted]"`,
     )
+    output = output.replace(
+      new RegExp(`("${escaped}"\\s*:\\s*)-?\\d+(?:\\.\\d+)?(?=\\s*[,}\\]])`, "g"),
+      `$1[redacted]`,
+    )
+    output = output.replace(new RegExp(`(${escaped}\\s*[:=]\\s*)-?\\d+(?:\\.\\d+)?`, "g"), `$1[redacted]`)
     output = output.replace(new RegExp(`(${escaped}\\s*[:=]\\s*)\\S+`, "g"), `$1[redacted]`)
   }
   return applyPatterns(output, patterns)

@@ -57,7 +57,7 @@ These are the traps. A confident classifier result still leaves the job alone un
 | --- | --- | --- |
 | `policy.dryRun` | `true` | Decisions are logged. BullMQ retries as usual. Set `dryRun: false` only when the user wants the queue to change. |
 | `policy.minConfidence` | `0.8` | Below this, the outcome is `fallback`, `escalated` is true, and the original error is rethrown. |
-| `policy.maxAutoRetries` | `3` | Caps applied `retry_now` and `retry_later`. Stored on the job as `__nightwatch.autoRetries`. Do not delete that field when replacing job data. |
+| `policy.maxAutoRetries` | `3` | Caps applied `retry_now` and `retry_later` from Nightwatch only. `retry_later` does not spend a BullMQ attempt, so a job can still run more total tries than `attempts` suggests. Stored on the job as `__nightwatch.autoRetries`. Do not delete that field when replacing job data. |
 | `policy.timeoutMs` | `1500`, or the classifier's `suggestedTimeoutMs` | A slow or thrown classifier becomes `fallback`. The original error is rethrown. `JevProvider` suggests 9000 and `CascadeProvider` more. Do not set 1500 by hand when Jev is in the chain. |
 | `policy.neverAutoHandle` | `[]` | Job names or `/regex/` strings. These jobs are never auto-handled, even when dry run is off. |
 | Unmatched rules | `page_human` at `0.5` | `RulesProvider` returns this when nothing matches. `0.5` is under `0.8`, so the job is left to BullMQ. |
@@ -86,7 +86,7 @@ withTriage(async (job) => {
 
 ## Classifiers
 
-Use `CascadeProvider([new RulesProvider(), new JevProvider(...)])` when the user has a TypeSafe key, and `RulesProvider` alone when they do not. The cascade stops at the first answer at or above `below` (default 0.8), so Jev is only called for errors the rules miss. `ChainProvider` only falls through when a classifier throws, not on low confidence. Built-in matches cover rate limits, timeouts, connection resets, 5xx, malformed JSON, validation errors, expired auth, duplicate ids, and signature failures. Custom rules are checked first. See `docs/custom-rules.md`.
+Use `CascadeProvider([new RulesProvider(), new JevProvider(...)])` when the user has a TypeSafe key, and `RulesProvider` alone when they do not. The cascade stops at the first answer at or above `below` (default 0.8), so Jev is only called for errors the rules miss. `ChainProvider` only falls through when a classifier throws, not on low confidence. Built-in matches cover rate limits, throttling, timeouts, connection resets, 5xx, HTTP 401/403 and 400/422, malformed JSON, validation errors, invalid recipients, missing dispatch ids, blocked bots, expired auth, duplicate ids, and signature failures. Put app-specific phrases in custom rules first. See `docs/custom-rules.md`.
 
 `HttpProvider` posts the failure JSON and expects `{ decision, confidence, reason, delayMs?, provider? }`. `decision` is `retry_now`, `retry_later`, `dead_letter`, or `page_human`.
 

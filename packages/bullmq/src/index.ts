@@ -137,7 +137,24 @@ export function failureFromJob(job: Job, error: Error, summary?: string): Failur
 
 let dryRunNoticeShown = false
 
-const DEFAULT_REDACT_PATTERNS: RegExp[] = [REDACT_PATTERNS.email, REDACT_PATTERNS.phone]
+const DEFAULT_REDACT_PATTERNS: RegExp[] = [
+  REDACT_PATTERNS.email,
+  REDACT_PATTERNS.phone,
+  REDACT_PATTERNS.longNumber,
+]
+
+const DEFAULT_REDACT_KEYS = [
+  "token",
+  "authorization",
+  "password",
+  "secret",
+  "email",
+  "apiKey",
+  "userId",
+  "telegramChatId",
+  "phoneOverride",
+  "dispatchId",
+]
 
 function effectivePolicy(policy: PolicyOptions | undefined, classifier: Classifier): PolicyOptions {
   if (policy?.timeoutMs !== undefined || !classifier.suggestedTimeoutMs) return policy ?? {}
@@ -177,7 +194,7 @@ export function withTriage<DataType = unknown, ResultType = unknown, NameType ex
       const original = asError(caught)
       const policyOptions = effectivePolicy(options.policy, options.classifier)
       const policy = resolvePolicy(policyOptions)
-      const keys = options.redact?.keys ?? []
+      const keys = options.redact?.keys ?? DEFAULT_REDACT_KEYS
       const patterns = options.redact?.patterns ?? DEFAULT_REDACT_PATTERNS
       const summary = options.payloadSummary ? options.payloadSummary(job) : undefined
       const failure = redactFailure(failureFromJob(job, original, summary), keys, patterns)
