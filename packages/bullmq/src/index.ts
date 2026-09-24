@@ -5,6 +5,7 @@ export {
   JevProvider,
   JsonlDecisionStore,
   MemoryDecisionStore,
+  REDACT_PATTERNS,
   RulesProvider,
   fromJevResponse,
   readRecentDecisions,
@@ -53,10 +54,20 @@ export type TriageOptions<DataType = unknown, ResultType = unknown, NameType ext
   classifier: Classifier
   policy?: PolicyOptions
   store?: DecisionStore
-  redact?: { keys: string[] }
+  redact?: { keys?: string[]; patterns?: RegExp[] }
   onDecision?: (record: DecisionRecord) => void | Promise<void>
   onEscalate?: (context: EscalateContext<DataType>) => void | Promise<void>
+  onDeadLetter?: (context: EscalateContext<DataType>) => void | Promise<void>
+  /** Return false when a side effect may already have happened. Nightwatch then adds no retry. */
+  retrySafe?: (job: Job<DataType, ResultType, NameType>, error: Error) => boolean | Promise<boolean>
   payloadSummary?: (job: Job<DataType, ResultType, NameType>) => string | undefined
+}
+
+/** True when BullMQ will not run this job again: the last attempt failed, or Nightwatch dead-lettered it. */
+export function isFinalFailure(job: Job, error?: unknown): boolean {
+  if (error instanceof UnrecoverableError) return true
+  if (error instanceof Error && error.name === "UnrecoverableError") return true
+  return job.attemptsMade >= (job.opts.attempts ?? 1)
 }
 
 type WorkerInternal<DataType, ResultType, NameType extends string> = Worker<
@@ -163,9 +174,19 @@ export function withTriage<DataType = unknown, ResultType = unknown, NameType ex
       const policyOptions = effectivePolicy(options.policy, options.classifier)
       const policy = resolvePolicy(policyOptions)
       const keys = options.redact?.keys ?? []
+      const patterns = options.redact?.patterns ?? []
       const summary = options.payloadSummary ? options.payloadSummary(job) : undefined
-      const failure = redactFailure(failureFromJob(job, original, summary), keys)
+      const failure = redactFailure(failureFromJob(job, original, summary), keys, patterns)
       const autoRetries = readState(job.data).autoRetries
+      let retrySafe = true
+      if (options.retrySafe) {
+        try {
+          retrySafe = (await options.retrySafe(job, original)) !== false
+        } catch (error) {
+          console.error("nightwatch retrySafe hook failed. Treating the job as not safe to retry.", error)
+          retrySafe = false
+        }
+      }
 
       let result: Result | null = null
       let classifierError: unknown
@@ -181,6 +202,7 @@ export function withTriage<DataType = unknown, ResultType = unknown, NameType ex
         options: policyOptions,
         autoRetries,
         classifierError,
+        retrySafe,
       })
 
       if (plan.applied && plan.action === "retry_later" && !token) {
@@ -222,6 +244,11 @@ export function withTriage<DataType = unknown, ResultType = unknown, NameType ex
       }
 
       if (plan.action === "dead_letter") {
+        if (result) {
+          await runHook("onDeadLetter", () =>
+            options.onDeadLetter?.({ failure, result, job, policy: plan }),
+          )
+        }
         throw new UnrecoverableError(plan.reason || "nightwatch dead lettered this job")
       }
 

@@ -4,6 +4,7 @@ import {
   applyPolicy,
   CascadeProvider,
   JevProvider,
+  REDACT_PATTERNS,
   redactFailure,
   RulesProvider,
   withTimeout,
@@ -26,6 +27,8 @@ Options:
       --min-confidence <n>  Policy bar, 0 to 1. Default 0.8.
       --redact <keys>       Comma separated payload keys to hide.
                             Default token,authorization,password,secret,email,apiKey.
+                            Email addresses and phone numbers are always hidden,
+                            in error messages too.
       --rules-only          Do not call Jev even when TYPESAFE_API_KEY is set.
       --json                Print one JSON object per job.
   -h, --help                Show this help.
@@ -166,7 +169,10 @@ async function scan(argv: string[]): Promise<void> {
       const jobs = (await queue.getFailed(0, limit - 1)).filter(Boolean)
       const scanned = await mapLimit(jobs, 4, async (job): Promise<Row> => {
         const error = errorFromJob(job)
-        const failure: Failure = redactFailure(failureFromJob(job, error), redactKeys)
+        const failure: Failure = redactFailure(failureFromJob(job, error), redactKeys, [
+          REDACT_PATTERNS.email,
+          REDACT_PATTERNS.phone,
+        ])
         failure.attempt = Math.max(1, job.attemptsMade)
         let result: Result | null = null
         let classifierError: unknown
