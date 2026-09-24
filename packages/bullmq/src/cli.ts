@@ -1,4 +1,5 @@
 import { Queue, type Job } from "bullmq"
+import { Cluster } from "ioredis"
 import { parseArgs } from "node:util"
 import {
   applyPolicy,
@@ -24,6 +25,9 @@ Options:
   -q, --queue <name>        Queue to scan. Repeat for more than one.
   -n, --limit <number>      Most recent failed jobs per queue. Default 50.
       --prefix <prefix>     BullMQ key prefix. Default "bull".
+      --cluster             Connect to Redis Cluster (for example ElastiCache in
+                            cluster mode). Pass the same --prefix your workers use,
+                            usually with braces, such as "{emails}".
       --min-confidence <n>  Policy bar, 0 to 1. Default 0.8.
       --redact <keys>       Comma separated payload keys to hide.
                             Default token,authorization,password,secret,email,apiKey.
@@ -35,6 +39,8 @@ Options:
 
 The redis url defaults to REDIS_URL, then redis://127.0.0.1:6379.
 With TYPESAFE_API_KEY set, rules answer first and Jev answers what they are unsure about.`
+
+const CONNECT_TIMEOUT_MS = 10_000
 
 const DEFAULT_REDACT = ["token", "authorization", "password", "secret", "email", "apiKey"]
 
@@ -61,6 +67,23 @@ function connectionFrom(url: string) {
     db: db ? Number(db) : undefined,
     tls: parsed.protocol === "rediss:" ? {} : undefined,
     maxRetriesPerRequest: null,
+  }
+}
+
+function clusterFrom(url: string): Cluster {
+  const { host, port, username, password, tls } = connectionFrom(url)
+  return new Cluster([{ host, port }], {
+    dnsLookup: (address, callback) => callback(null, address),
+    clusterRetryStrategy: (times) => (times > 3 ? null : 500),
+    redisOptions: { username, password, tls, maxRetriesPerRequest: null },
+  })
+}
+
+async function ready(check: () => Promise<unknown>, what: string, hint = ""): Promise<void> {
+  try {
+    await withTimeout(check(), CONNECT_TIMEOUT_MS)
+  } catch {
+    throw new Error(`Could not reach ${what} within ${CONNECT_TIMEOUT_MS / 1000}s.${hint ? ` ${hint}` : ""}`)
   }
 }
 
@@ -127,6 +150,7 @@ async function scan(argv: string[]): Promise<void> {
       queue: { type: "string", short: "q", multiple: true },
       limit: { type: "string", short: "n" },
       prefix: { type: "string" },
+      cluster: { type: "boolean" },
       "min-confidence": { type: "string" },
       redact: { type: "string" },
       "rules-only": { type: "boolean" },
@@ -150,7 +174,24 @@ async function scan(argv: string[]): Promise<void> {
     : DEFAULT_REDACT
 
   const url = positionals[0] ?? process.env.REDIS_URL ?? "redis://127.0.0.1:6379"
-  const connection = connectionFrom(url)
+  const cluster = values.cluster ? clusterFrom(url) : undefined
+  const connection = cluster ?? connectionFrom(url)
+  if (cluster && !values.prefix?.includes("{")) {
+    console.error('nightwatch: with --cluster, pass the prefix your workers use, for example --prefix "{emails}".')
+  }
+  if (cluster) {
+    cluster.on("error", () => undefined)
+    try {
+      await ready(
+        () => cluster.ping(),
+        `a Redis Cluster at ${new URL(url).host}`,
+        "Leave out --cluster if cluster mode is off.",
+      )
+    } catch (error) {
+      cluster.disconnect()
+      throw error
+    }
+  }
 
   const jevKey = values["rules-only"] ? undefined : process.env.TYPESAFE_API_KEY
   const rules = new RulesProvider()
@@ -165,7 +206,9 @@ async function scan(argv: string[]): Promise<void> {
   const rows: Row[] = []
   for (const name of queues) {
     const queue = new Queue(name, { connection, prefix: values.prefix })
+    queue.on("error", () => undefined)
     try {
+      await ready(() => queue.waitUntilReady(), `Redis at ${new URL(url).host}`)
       const jobs = (await queue.getFailed(0, limit - 1)).filter(Boolean)
       const scanned = await mapLimit(jobs, 4, async (job): Promise<Row> => {
         const error = errorFromJob(job)
@@ -188,13 +231,14 @@ async function scan(argv: string[]): Promise<void> {
           autoRetries: autoRetriesOf(job.data),
           classifierError,
         })
-        return { queue: name, jobId: String(job.id), jobName: job.name, error: error.message, result, plan }
+        return { queue: name, jobId: String(job.id), jobName: job.name, error: failure.errorMessage, result, plan }
       })
       rows.push(...scanned)
     } finally {
       await queue.close()
     }
   }
+  if (cluster) await cluster.quit()
 
   if (values.json) {
     for (const row of rows) console.log(JSON.stringify(row))
