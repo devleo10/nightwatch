@@ -1,8 +1,29 @@
+export {
+  ChainProvider,
+  HttpProvider,
+  JevProvider,
+  JsonlDecisionStore,
+  MemoryDecisionStore,
+  RulesProvider,
+  fromJevResponse,
+  readRecentDecisions,
+  toJevRequest,
+} from "@devleo10/nightwatch-core"
+export type {
+  Classifier,
+  Decision,
+  DecisionRecord,
+  DecisionStore,
+  Failure,
+  PolicyOptions,
+  Result,
+  Rule,
+} from "@devleo10/nightwatch-core"
+
 import { DelayedError, UnrecoverableError, type Job, type Processor, type Worker } from "bullmq"
 import { randomUUID } from "node:crypto"
 import {
   applyPolicy,
-  readRecentDecisions,
   redactFailure,
   resolvePolicy,
   withTimeout,
@@ -12,9 +33,9 @@ import {
   type Failure,
   type PolicyOptions,
   type Result,
-} from "@queue-triage/core"
+} from "@devleo10/nightwatch-core"
 
-export const TRIAGE_STATE_KEY = "__queueTriage"
+export const NIGHTWATCH_STATE_KEY = "__nightwatch"
 
 export type TriageState = {
   autoRetries: number
@@ -52,7 +73,7 @@ function asError(error: unknown): Error {
 
 function readState(data: unknown): TriageState {
   if (!data || typeof data !== "object") return { autoRetries: 0 }
-  const state = (data as Record<string, unknown>)[TRIAGE_STATE_KEY]
+  const state = (data as Record<string, unknown>)[NIGHTWATCH_STATE_KEY]
   if (!state || typeof state !== "object") return { autoRetries: 0 }
   const count = (state as Record<string, unknown>).autoRetries
   return { autoRetries: typeof count === "number" && Number.isFinite(count) ? count : 0 }
@@ -71,7 +92,7 @@ function defaultSummary(data: unknown): string | undefined {
   const record = data as Record<string, unknown>
   if (typeof record.payloadSummary === "string") return record.payloadSummary
   const copy = { ...record }
-  delete copy[TRIAGE_STATE_KEY]
+  delete copy[NIGHTWATCH_STATE_KEY]
   const keys = Object.keys(copy)
   if (keys.length === 0) return undefined
   const text = JSON.stringify(copy)
@@ -81,7 +102,7 @@ function defaultSummary(data: unknown): string | undefined {
 function metadataFrom(data: unknown): Record<string, unknown> | undefined {
   if (!data || typeof data !== "object") return undefined
   const copy = { ...(data as Record<string, unknown>) }
-  delete copy[TRIAGE_STATE_KEY]
+  delete copy[NIGHTWATCH_STATE_KEY]
   delete copy.payloadSummary
   return Object.keys(copy).length > 0 ? copy : undefined
 }
@@ -105,7 +126,7 @@ async function runHook(label: string, hook?: () => void | Promise<void>): Promis
   try {
     await hook()
   } catch (error) {
-    console.error(`queue-triage ${label} hook failed.`, error)
+    console.error(`nightwatch ${label} hook failed.`, error)
   }
 }
 
@@ -176,18 +197,18 @@ export function withTriage<DataType = unknown, ResultType = unknown, NameType ex
         try {
           await job.updateData({
             ...(job.data as Record<string, unknown>),
-            [TRIAGE_STATE_KEY]: { autoRetries: autoRetries + 1 },
+            [NIGHTWATCH_STATE_KEY]: { autoRetries: autoRetries + 1 },
           } as DataType)
           await job.moveToDelayed(Date.now() + delayMs, token)
         } catch (moveError) {
-          console.error("queue-triage could not delay the job. Leaving it to BullMQ.", moveError)
+          console.error("nightwatch could not delay the job. Leaving it to BullMQ.", moveError)
           throw original
         }
-        throw new DelayedError("queue-triage moved this job to delayed")
+        throw new DelayedError("nightwatch moved this job to delayed")
       }
 
       if (plan.action === "dead_letter") {
-        throw new UnrecoverableError(plan.reason || "queue-triage dead lettered this job")
+        throw new UnrecoverableError(plan.reason || "nightwatch dead lettered this job")
       }
 
       if (plan.action === "page_human") {
@@ -201,7 +222,7 @@ export function withTriage<DataType = unknown, ResultType = unknown, NameType ex
 
       await job.updateData({
         ...(job.data as Record<string, unknown>),
-        [TRIAGE_STATE_KEY]: { autoRetries: autoRetries + 1 },
+        [NIGHTWATCH_STATE_KEY]: { autoRetries: autoRetries + 1 },
       } as DataType)
       throw original
     }
@@ -220,8 +241,4 @@ export function attachTriage<DataType = unknown, ResultType = unknown, NameType 
   }
   internal.processFn = withTriage(internal.processFn.bind(worker), options)
   return worker
-}
-
-export async function recentDecisions(store: DecisionStore, limit = 50): Promise<DecisionRecord[]> {
-  return readRecentDecisions(store, limit)
 }

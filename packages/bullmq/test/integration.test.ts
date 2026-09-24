@@ -1,12 +1,15 @@
 import net from "node:net"
 import { Queue, QueueEvents, Worker, type ConnectionOptions, type Job } from "bullmq"
 import { afterEach, beforeAll, describe, expect, it } from "vitest"
-import { MemoryDecisionStore, type Classifier, type Result } from "@queue-triage/core"
+import { MemoryDecisionStore, type Classifier, type Result } from "@devleo10/nightwatch-core"
 import { withTriage } from "../src/index.js"
 
+const redisHost = process.env.REDIS_HOST ?? "127.0.0.1"
+const redisPort = Number(process.env.REDIS_PORT ?? 6379)
+
 const connection: ConnectionOptions = {
-  host: process.env.REDIS_HOST ?? "127.0.0.1",
-  port: Number(process.env.REDIS_PORT ?? 6379),
+  host: redisHost,
+  port: redisPort,
   maxRetriesPerRequest: null,
 }
 
@@ -14,7 +17,7 @@ const closers: Array<() => Promise<void>> = []
 
 function redisIsUp(): Promise<void> {
   return new Promise((resolve, reject) => {
-    const socket = net.connect({ host: connection.host, port: Number(connection.port) })
+    const socket = net.connect({ host: redisHost, port: redisPort })
     const timer = setTimeout(() => {
       socket.destroy()
       reject(new Error("Redis is not accepting connections on 127.0.0.1:6379. Run: docker compose up -d"))

@@ -1,7 +1,7 @@
 {
-  "name": "@queue-triage/bullmq",
+  "name": "@devleo10/nightwatch",
   "version": "0.1.0",
-  "description": "BullMQ adapter for queue-triage. Wrap a processor with withTriage.",
+  "description": "BullMQ adapter for Nightwatch. Import it from @devleo10/nightwatch/bullmq.",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
@@ -19,10 +19,17 @@
         "types": "./dist/index.d.ts",
         "default": "./dist/index.cjs"
       }
+    },
+    "./bullmq": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.cjs"
+      }
     }
-  },
-  "publishConfig": {
-    "access": "public"
   },
   "engines": {
     "node": ">=20"
@@ -33,8 +40,11 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "typecheck": "tsc --noEmit"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
-    "@queue-triage/core": "0.1.0"
+    "@devleo10/nightwatch-core": "0.1.0"
   },
   "peerDependencies": {
     "bullmq": ">=5.0.0"
