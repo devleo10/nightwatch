@@ -1,6 +1,5 @@
-import type { Failure } from "./types.js"
-import type { PolicyOutcome } from "./policy.js"
-import type { Result } from "./types.js"
+import type { Failure, Result } from "../types.js"
+import type { PolicyOutcome } from "../policy.js"
 
 export type DecisionRecord = {
   id: string

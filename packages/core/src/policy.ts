@@ -135,15 +135,16 @@ export function applyPolicy(input: {
   const result = input.result
 
   if (!result) {
-    const timedOut = input.classifierError instanceof ClassifierTimeoutError
+    const classifierError = input.classifierError
+    const timedOut = classifierError instanceof ClassifierTimeoutError
     return {
       action: "fallback",
       applied: false,
       escalated: false,
       dryRun: policy.dryRun,
       reason: timedOut
-        ? input.classifierError.message
-        : `Classifier failed (${errorMessage(input.classifierError)}). Left the job to BullMQ.`,
+        ? classifierError.message
+        : `Classifier failed (${errorMessage(classifierError)}). Left the job to BullMQ.`,
     }
   }
 

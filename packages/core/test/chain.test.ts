@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
   ChainProvider,
-  ClassifierTimeoutError,
   JevProvider,
   type Classifier,
   type Failure,
@@ -64,9 +63,9 @@ describe("ChainProvider", () => {
     await expect(chain.classify(failure)).rejects.toThrow(/All providers failed/)
   })
 
-  it("reports a timeout error message from withTimeout", async () => {
+  it("includes the timeout in the failure when every provider is too slow", async () => {
     const chain = new ChainProvider([new SlowProvider()], { timeoutMs: 20 })
-    await expect(chain.classify(failure)).rejects.toThrow(ClassifierTimeoutError)
+    await expect(chain.classify(failure)).rejects.toThrow(/timed out after 20ms/)
   })
 })
 

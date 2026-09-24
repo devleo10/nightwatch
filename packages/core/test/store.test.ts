@@ -62,7 +62,7 @@ describe("decision stores", () => {
   })
 
   it("appends json lines and reads the tail", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "queue-triage-"))
+    const dir = await mkdtemp(join(tmpdir(), "nightwatch-"))
     try {
       const store = new JsonlDecisionStore(join(dir, "decisions.jsonl"))
       await store.append(record("a"))
