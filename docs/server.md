@@ -7,7 +7,7 @@ npm install @devleo10/nightwatch-http
 npx @devleo10/nightwatch-http
 ```
 
-Replaces deprecated `@devleo10/nightwatch-server`. The process binary is still `nightwatch-server`. See [Migration](migration.md).
+Replaces `@devleo10/nightwatch-server`, which was removed from npm. The process binary is still `nightwatch-server`. See [Migration](migration.md).
 
 | Route | Purpose |
 | --- | --- |

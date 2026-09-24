@@ -1,6 +1,6 @@
 # Package rename
 
-Nightwatch ships three npm packages. Two older names are **deprecated** on npm but still resolve if something pinned them.
+Nightwatch ships three npm packages, all at 0.1.2. The older names are gone or deprecated.
 
 ## Install these
 
@@ -14,16 +14,15 @@ Nightwatch ships three npm packages. Two older names are **deprecated** on npm b
 npm install @devleo10/nightwatch-bullmq bullmq
 ```
 
-## Deprecated on npm
+## Old names
 
-| Old | New |
-| --- | --- |
-| `@devleo10/nightwatch-core` | `@devleo10/nightwatch-classifier` |
-| `@devleo10/nightwatch-server` | `@devleo10/nightwatch-http` |
+| Old | New | On npm |
+| --- | --- | --- |
+| `@devleo10/nightwatch` | `@devleo10/nightwatch-bullmq` | Removed |
+| `@devleo10/nightwatch-core` | `@devleo10/nightwatch-classifier` | Deprecated, shows a notice on install |
+| `@devleo10/nightwatch-server` | `@devleo10/nightwatch-http` | Removed |
 
-npm shows a deprecation notice on install. Move to the new names; do not publish new code under the old scopes.
-
-`@devleo10/nightwatch` was never published. If docs or snippets used `@devleo10/nightwatch/bullmq`, use `@devleo10/nightwatch-bullmq` instead.
+If docs or snippets used `@devleo10/nightwatch/bullmq`, use `@devleo10/nightwatch-bullmq` instead.
 
 ## Import changes
 

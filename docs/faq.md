@@ -2,7 +2,7 @@
 
 ## What happened to `@devleo10/nightwatch-core` and `@devleo10/nightwatch-server`?
 
-They were renamed to `@devleo10/nightwatch-classifier` and `@devleo10/nightwatch-http`. The old names are deprecated on npm. See [Migration](migration.md).
+They were renamed to `@devleo10/nightwatch-classifier` and `@devleo10/nightwatch-http`. The old names are removed or deprecated on npm. See [Migration](migration.md).
 
 ## Does this replace BullMQ retries?
 

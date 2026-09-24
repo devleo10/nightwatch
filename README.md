@@ -60,7 +60,7 @@ withTriage(processor, {
 
 `@devleo10/nightwatch-bullmq` depends on `@devleo10/nightwatch-classifier`, so one install is enough for the worker.
 
-**Renamed from `@devleo10/nightwatch-core` or `@devleo10/nightwatch-server`?** Those packages are deprecated on npm. Use the names in the table above. [Migration guide](docs/migration.md).
+**Used `@devleo10/nightwatch`, `@devleo10/nightwatch-core`, or `@devleo10/nightwatch-server`?** Those names are removed or deprecated on npm. Use the names in the table above. [Migration guide](docs/migration.md).
 
 ## Run the demo
 
