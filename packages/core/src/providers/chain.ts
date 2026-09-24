@@ -8,6 +8,7 @@ export type ChainProviderOptions = {
 export class ChainProvider implements Classifier {
   private readonly providers: Classifier[]
   private readonly timeoutMs: number
+  readonly suggestedTimeoutMs: number
 
   constructor(providers: Classifier[], options: ChainProviderOptions = {}) {
     if (providers.length === 0) {
@@ -21,6 +22,7 @@ export class ChainProvider implements Classifier {
     }
     this.providers = [...providers]
     this.timeoutMs = timeoutMs
+    this.suggestedTimeoutMs = timeoutMs * providers.length + 500
   }
 
   async classify(input: Failure): Promise<Result> {

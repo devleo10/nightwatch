@@ -20,6 +20,9 @@ export { fromJevResponse, JevProvider, toJevRequest } from "./providers/jev.js"
 export type { ChainProviderOptions } from "./providers/chain.js"
 export { ChainProvider } from "./providers/chain.js"
 
+export type { CascadeProviderOptions } from "./providers/cascade.js"
+export { CascadeProvider } from "./providers/cascade.js"
+
 export type { DecisionRecord, DecisionStore } from "./store/types.js"
 export { readRecentDecisions } from "./store/types.js"
 export { MemoryDecisionStore } from "./store/memory.js"

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
+  CascadeProvider,
   ChainProvider,
   JevProvider,
   type Classifier,
@@ -66,6 +67,44 @@ describe("ChainProvider", () => {
   it("includes the timeout in the failure when every provider is too slow", async () => {
     const chain = new ChainProvider([new SlowProvider()], { timeoutMs: 20 })
     await expect(chain.classify(failure)).rejects.toThrow(/timed out after 20ms/)
+  })
+})
+
+class FixedProvider implements Classifier {
+  constructor(private readonly result: Result) {}
+  async classify(): Promise<Result> {
+    return this.result
+  }
+}
+
+describe("CascadeProvider", () => {
+  const unsure: Result = { decision: "page_human", confidence: 0.5, reason: "no rule", latencyMs: 1, provider: "rules" }
+  const sure: Result = { decision: "dead_letter", confidence: 0.95, reason: "jev", latencyMs: 400, provider: "jev" }
+
+  it("stops at the first confident result", async () => {
+    const cascade = new CascadeProvider([new FixedProvider(sure), new BoomProvider()])
+    await expect(cascade.classify(failure)).resolves.toMatchObject({ provider: "jev" })
+  })
+
+  it("asks the next provider when the first is unsure, and adds up latency", async () => {
+    const cascade = new CascadeProvider([new FixedProvider(unsure), new FixedProvider(sure)])
+    await expect(cascade.classify(failure)).resolves.toMatchObject({ provider: "jev", latencyMs: 401 })
+  })
+
+  it("returns the last answer when nobody clears the bar", async () => {
+    const guess: Result = { ...sure, confidence: 0.4 }
+    const cascade = new CascadeProvider([new FixedProvider(unsure), new FixedProvider(guess)])
+    await expect(cascade.classify(failure)).resolves.toMatchObject({ provider: "jev", confidence: 0.4 })
+  })
+
+  it("keeps an earlier answer when a later provider fails", async () => {
+    const cascade = new CascadeProvider([new FixedProvider(unsure), new BoomProvider()])
+    await expect(cascade.classify(failure)).resolves.toMatchObject({ provider: "rules", confidence: 0.5 })
+  })
+
+  it("throws when every provider fails", async () => {
+    const cascade = new CascadeProvider([new BoomProvider()])
+    await expect(cascade.classify(failure)).rejects.toThrow(/All providers failed/)
   })
 })
 

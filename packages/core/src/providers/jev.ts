@@ -100,12 +100,15 @@ export type JevProviderOptions = {
 
 export class JevProvider implements Classifier {
   private readonly http: HttpProvider
+  readonly suggestedTimeoutMs: number
 
   constructor(options: JevProviderOptions = {}) {
+    const timeoutMs = options.timeoutMs ?? 8000
+    this.suggestedTimeoutMs = timeoutMs + 1000
     const httpOptions: HttpProviderOptions = {
       url: options.url ?? JEV_SYSTEM_ONE_URL,
       headers: options.headers,
-      timeoutMs: options.timeoutMs ?? 8000,
+      timeoutMs,
       fetchImpl: options.fetchImpl,
       providerName: "jev",
       serialize: options.map?.toRequest ?? toJevRequest,

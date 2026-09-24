@@ -27,6 +27,8 @@ export type Result = {
 
 export interface Classifier {
   classify(input: Failure): Promise<Result>
+  /** Used as policy.timeoutMs when the policy does not set one. */
+  suggestedTimeoutMs?: number
 }
 
 export const failureSchema = z.object({
