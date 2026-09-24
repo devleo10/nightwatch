@@ -4,7 +4,7 @@ Read this before editing a consumer app or this repo. Nightwatch classifies a fa
 
 Repository: https://github.com/devleo10/nightwatch
 
-Packages, all at version 0.1.1:
+Packages, all at version 0.1.2:
 
 - `@devleo10/nightwatch-bullmq` wraps a worker and ships the `nightwatch scan` command. Install this one.
 - `@devleo10/nightwatch-classifier` is the classifier, policy, and decision log. The BullMQ package depends on it.

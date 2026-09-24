@@ -1,6 +1,6 @@
 {
   "name": "@devleo10/nightwatch-demo",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "scripts": {
     "dev": "concurrently -n server,web -c blue,green \"tsx watch server/index.ts\" \"next dev\"",
@@ -9,8 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@devleo10/nightwatch-bullmq": "0.1.1",
-    "@devleo10/nightwatch-classifier": "0.1.1",
+    "@devleo10/nightwatch-bullmq": "0.1.2",
+    "@devleo10/nightwatch-classifier": "0.1.2",
     "@base-ui/react": "^1.8.0",
     "bullmq": "^5.58.5",
     "class-variance-authority": "^0.7.1",
