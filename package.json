@@ -1,17 +1,21 @@
 {
-  "name": "queue-triage",
+  "name": "nightwatch-monorepo",
   "private": true,
   "workspaces": [
-    "shared",
-    "server",
-    "web"
+    "packages/*",
+    "apps/*"
   ],
   "scripts": {
-    "dev": "concurrently -n server,web -c blue,green \"npm run dev -w server\" \"npm run dev -w web\"",
-    "dev:server": "npm run dev -w server",
-    "dev:web": "npm run dev -w web"
+    "build": "npm run build -w @devleo10/nightwatch-core && npm run build -w @devleo10/nightwatch && npm run build -w @devleo10/nightwatch-server",
+    "typecheck": "npm run typecheck -w @devleo10/nightwatch-core && npm run typecheck -w @devleo10/nightwatch && npm run typecheck -w @devleo10/nightwatch-server",
+    "test": "npm run test -w @devleo10/nightwatch-core && npm run test -w @devleo10/nightwatch",
+    "test:integration": "npm run test:integration -w @devleo10/nightwatch",
+    "lint": "npm run typecheck && npm run lint -w @devleo10/nightwatch-demo",
+    "dev": "npm run build && npm run dev -w @devleo10/nightwatch-demo",
+    "changeset": "changeset"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.29.7",
     "concurrently": "^9.2.1"
   }
 }

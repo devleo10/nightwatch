@@ -1,23 +1,55 @@
 # Nightwatch
 
-A live dashboard for failed background jobs. A producer keeps adding work to a BullMQ queue. A worker fails about 40 percent of those jobs with errors you would see in production: rate limits, timeouts, bad payloads, invalid signatures. Each failure is classified, then the system retries it, parks it on a dead-letter list, or flags it for a person. The page streams every decision as it happens, so you can watch the queue handle itself.
+Nightwatch classifies a failed BullMQ job, then either acts on that decision or leaves BullMQ alone. It is safe by default: dry run is on, low confidence does nothing, and a slow or broken classifier falls back to normal retries.
 
-## Setup
-
-You need Node.js 20 or newer, and Docker.
+## Install
 
 ```bash
-npm install
+npm install @devleo10/nightwatch bullmq
+```
+
+```ts
+import { Worker } from "bullmq"
+import { RulesProvider, withTriage } from "@devleo10/nightwatch/bullmq"
+
+const worker = new Worker("emails", withTriage(async (job) => {
+  await sendEmail(job.data)
+}, {
+  classifier: new RulesProvider(),
+}))
+```
+
+Nothing about the job changes until you set `policy: { dryRun: false }`. Until then every decision is logged and BullMQ retries as usual.
+
+## Packages
+
+| Package | What it is |
+| --- | --- |
+| `@devleo10/nightwatch/bullmq` | `withTriage()` and `attachTriage()` |
+| `@devleo10/nightwatch-core` | Types, rules, HTTP and Jev providers, policy, decision log |
+| `@devleo10/nightwatch-server` | `POST /classify` and `GET /decisions` |
+
+## Demo
+
+The dashboard in `apps/demo` generates failing jobs and streams decisions.
+
+```bash
 docker compose up -d
+npm install
 npm run dev
 ```
 
-`docker compose up -d` starts Redis in the background. `npm run dev` starts the API on http://localhost:4000 and the dashboard on http://localhost:3000.
+Open the URL Next prints (port 3000 unless it is already taken). Dry run is on. Switch to Live when you want the worker to delay, dead letter, or escalate for real.
 
-Open http://localhost:3000. The producer is already running. Pause stops new jobs. Fast shortens the gap between jobs so the feed moves quickly for a screen recording.
+## Docs
 
-## Swapping in a different classifier
+- [Quick start](docs/quick-start.md)
+- [Policies and safety](docs/policies.md)
+- [Custom rules](docs/custom-rules.md)
+- [HTTP and Jev providers](docs/providers.md)
+- [HTTP server](docs/server.md)
+- [FAQ](docs/faq.md)
 
-All classification lives in `server/src/classifier.ts`. `classify` returns a decision, a confidence score, latency in milliseconds, and a provider name.
+## Safety
 
-The default provider is `rules`. Set `CLASSIFIER_PROVIDER=jev` and `TYPESAFE_API_KEY` to classify with TypeSafe Jev (`jev-latest`) through `@typesafe-ai/sdk`. Each failure is one Choice over `retry_now`, `retry_later`, `dead_letter`, and `page_human`. The worker still auto-acts only when confidence is at least 0.8. A failed or unreadable Jev call abstains: it reports `page_human` at confidence 0, so the job is escalated. Leave the provider unset, or set it to `rules`, to keep the built-in rules.
+Failure payloads can contain secrets. Set `redact.keys` before a job is sent to an external provider or written to the decision log. See [SECURITY.md](SECURITY.md).

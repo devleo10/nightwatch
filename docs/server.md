@@ -1,0 +1,45 @@
+# HTTP server
+
+`@devleo10/nightwatch-server` exposes classification without embedding the library in a worker. Your app can `POST /classify` and apply the returned plan itself, or use it to inspect decisions.
+
+```bash
+npm install @devleo10/nightwatch-server
+npx nightwatch-server
+```
+
+| Route | Purpose |
+| --- | --- |
+| `GET /health` | `{ "ok": true }`. Always open. |
+| `POST /classify` | Body `{ "failure": Failure, "autoRetries"?: number }`. Returns `{ result, policy }`. |
+| `GET /decisions?limit=50` | Recent decision records. |
+
+If `TRIAGE_API_KEY` is set, `/classify` and `/decisions` require `Authorization: Bearer <key>` or `x-api-key`.
+
+## Config
+
+Environment variables override a JSON file at `TRIAGE_CONFIG`.
+
+| Variable | Meaning |
+| --- | --- |
+| `PORT` | Listen port. Default 4000. |
+| `TRIAGE_CLASSIFIER` | `rules` (default), `http`, or `jev`. |
+| `TRIAGE_HTTP_URL` | Required for `http` and `jev`. |
+| `TRIAGE_HTTP_HEADERS` | JSON object of string headers. |
+| `TRIAGE_API_KEY` | Optional key for the two data routes. |
+| `TRIAGE_DECISION_LOG` | JSONL file path. Memory is used when this is unset. |
+| `TRIAGE_DRY_RUN` | `true` or `false`. Default `true`. |
+| `TRIAGE_MIN_CONFIDENCE` | Default 0.8. |
+| `TRIAGE_MAX_AUTO_RETRIES` | Default 3. |
+| `TRIAGE_TIMEOUT_MS` | Default 1500. |
+| `TRIAGE_NEVER_AUTO_HANDLE` | Comma separated job names or `/regex/` patterns. |
+
+`jev` starts, and warns that request mapping is still a TODO. Calls fail closed until you supply `map`.
+
+## Docker
+
+From the repo root, after `package-lock.json` exists:
+
+```bash
+docker build -f packages/server/Dockerfile -t nightwatch .
+docker run --rm -p 4000:4000 -e TRIAGE_DRY_RUN=true nightwatch
+```
