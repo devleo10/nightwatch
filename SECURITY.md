@@ -15,7 +15,7 @@ withTriage(processor, {
 })
 ```
 
-Error messages are rewritten only for `redact.keys` written as `key: value` or `key=value`, and for `redact.patterns`. Use `REDACT_PATTERNS.email`, `.phone`, and `.longNumber` for vendor errors that echo contact details or ids. Anything else in a message is sent as is, so keep secrets out of `Error` messages.
+By default `withTriage` hides email addresses and phone numbers in error messages, payload summaries, and metadata. Error messages are also rewritten for `redact.keys` written as `key: value` or `key=value`. Add `REDACT_PATTERNS.longNumber` for ids. Anything else in a message is sent as is, so keep secrets out of `Error` messages.
 
 ## Logs and the HTTP API
 

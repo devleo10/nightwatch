@@ -68,7 +68,21 @@ These are the traps. A confident classifier result still leaves the job alone un
 
 Check existing `failed` handlers before turning dry run off. A handler that marks a row failed only when `job.attemptsMade === job.opts.attempts` will miss a dead-lettered job, because BullMQ stops early. Replace that check with `isFinalFailure(job, error)` from `@devleo10/nightwatch-bullmq`.
 
-If a processor can fail after a side effect it must not repeat (a message sent, a charge made), pass `retrySafe: (job, error) => boolean`. When it returns false, Nightwatch never applies `retry_now` or `retry_later` and the record is marked escalated. BullMQ's own `attempts` still apply, so the processor must still be idempotent or the job must use `attempts: 1`.
+If a processor can fail after a side effect it must not repeat (a message sent, a charge made), pass `retrySafe: (job, error) => boolean`. When it returns false, the classifier is skipped (nothing is sent to Jev), and outside dry run the job stops: Nightwatch throws `UnrecoverableError`, so BullMQ's remaining attempts do not run. `onDeadLetter` and `onEscalate` are called with `result: null`, and `isFinalFailure` is true. Jobs in `neverAutoHandle` are still left to BullMQ. Nightwatch cannot detect the side effect. Your processor decides, usually by setting a flag on the error after the send:
+
+```ts
+withTriage(async (job) => {
+ await sendTelegram(job.data)
+ try {
+  await markNotified(job.data)
+ } catch (error) {
+  throw Object.assign(error as Error, { sent: true })
+ }
+}, {
+ classifier,
+ retrySafe: (_job, error) => !(error as { sent?: boolean }).sent,
+})
+```
 
 ## Classifiers
 
@@ -80,7 +94,7 @@ Use `CascadeProvider([new RulesProvider(), new JevProvider(...)])` when the user
 
 ## Secrets
 
-Set `redact` before any `HttpProvider` or `JevProvider` call. `keys` hides named fields in metadata and `payloadSummary`, and `key: value` or `key=value` text in `errorMessage`. `patterns` replaces regex matches in all three. Use the built-in `REDACT_PATTERNS.email`, `.phone`, and `.longNumber` (six or more digits, such as chat ids) when error text from a vendor can carry them:
+`withTriage` hides email addresses and phone numbers (including Telegram chat ids such as `-1001234567890`) in the error message, payload summary, and metadata by default. Set `redact` before any `HttpProvider` or `JevProvider` call to add more. `keys` hides named fields in metadata and `payloadSummary`, and `key: value` or `key=value` text in `errorMessage`. `patterns` replaces the default patterns, so include them again when you add one. `REDACT_PATTERNS.longNumber` hides any run of six or more digits, such as user ids. Pass `patterns: []` to turn pattern redaction off.
 
 ```ts
 redact: {
@@ -89,7 +103,9 @@ redact: {
 }
 ```
 
-Rules match on the redacted message, so do not redact words a rule needs. `nightwatch scan` always hides emails and phone numbers.
+Rules match on the redacted message, so do not redact words a rule needs. A bare ten-digit number, such as a Unix timestamp, is treated as a phone number. `nightwatch scan` always hides emails and phone numbers, and prints the redacted message.
+
+For Redis Cluster (for example ElastiCache in cluster mode), run `scan` with `--cluster` and the same `--prefix` the workers use, such as `--prefix "{emails}"`.
 
 `GET /decisions` is open unless `TRIAGE_API_KEY` is set. Do not expose that route without the key. The demo generates fake jobs. Do not point it at a queue that holds customer data.
 
