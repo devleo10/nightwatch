@@ -1,10 +1,20 @@
 # Nightwatch
 
-Nightwatch asks TypeSafe Jev what to do with a failed BullMQ job. One Choice, four answers: retry now, retry later, dead-letter, or a person. Jev returns a confidence. Your code moves the job only when that number clears the bar.
+Nightwatch decides what to do with a failed BullMQ job: retry now, retry later, dead-letter, or hand it to a person. Rules answer the errors they already know. TypeSafe Jev answers the rest, with a confidence. Your queue moves only when that confidence clears the bar.
 
-No API key yet? The same wrapper runs on built-in rules. Dry run stays on until you turn it off.
+Every queue has a long tail of errors nobody wrote a rule for. That tail is where Jev earns its keep, and where it says so when it is unsure.
 
 Agents: read [AGENTS.md](AGENTS.md) before wiring this into another app. It lists the defaults that look like bugs.
+
+## Try it on your own failed jobs
+
+No code changes. Read only.
+
+```bash
+TYPESAFE_API_KEY=... npx @devleo10/nightwatch scan redis://localhost:6379 --queue emails
+```
+
+It reads the most recent failed jobs, hides common secret keys in payloads, and prints what Nightwatch would do with each group of errors, how confident it is, and why. Leave out the key to see what rules alone would do. On a small sample of seven failures, rules handled three and rules then Jev handled five, and Jev declined a card decline at 58% instead of guessing.
 
 ## Install
 
@@ -16,26 +26,26 @@ npm install @devleo10/nightwatch bullmq
 
 ```ts
 import { Worker } from "bullmq"
-import { JevProvider, withTriage } from "@devleo10/nightwatch/bullmq"
+import { CascadeProvider, JevProvider, RulesProvider, withTriage } from "@devleo10/nightwatch/bullmq"
 
 const worker = new Worker("emails", withTriage(async (job) => {
   await sendEmail(job.data)
 }, {
-  classifier: new JevProvider({
-    headers: { authorization: `Bearer ${process.env.TYPESAFE_API_KEY}` },
-  }),
+  classifier: new CascadeProvider([
+    new RulesProvider(),
+    new JevProvider({ headers: { authorization: `Bearer ${process.env.TYPESAFE_API_KEY}` } }),
+  ]),
+  redact: { keys: ["token", "authorization", "email"] },
 }))
 ```
 
-Get the key from the [TypeSafe dashboard](https://docs.typesafe.ai/introduction/quickstart). The call is `POST https://api.typesafe.ai/v1/systemone` with model `jev-latest`.
+Get the key from the [TypeSafe dashboard](https://docs.typesafe.ai/introduction/quickstart). The call is `POST https://api.typesafe.ai/v1/systemone` with model `jev-latest`. No key yet? Pass `new RulesProvider()` on its own.
 
 Nothing about the job changes until `policy.dryRun` is `false`. Until then every decision is logged and BullMQ retries with the `attempts` and `backoff` you already set. If `attempts` is 1, `retry_now` cannot retry.
 
 ```ts
 withTriage(processor, {
-  classifier: new JevProvider({
-    headers: { authorization: `Bearer ${process.env.TYPESAFE_API_KEY}` },
-  }),
+  classifier,
   policy: { dryRun: false, minConfidence: 0.8 },
 })
 ```
@@ -44,8 +54,8 @@ withTriage(processor, {
 
 | Package | Import | What it is |
 | --- | --- | --- |
-| `@devleo10/nightwatch` | `@devleo10/nightwatch/bullmq` | `withTriage()` and `attachTriage()` |
-| `@devleo10/nightwatch-core` | `@devleo10/nightwatch-core` | Rules, HTTP, policy, decision log |
+| `@devleo10/nightwatch` | `@devleo10/nightwatch/bullmq` | `withTriage()`, `attachTriage()`, and `nightwatch scan` |
+| `@devleo10/nightwatch-core` | `@devleo10/nightwatch-core` | Rules, Jev, HTTP, cascade, policy, decision log |
 | `@devleo10/nightwatch-server` | `npx nightwatch-server` | `POST /classify` and `GET /decisions` |
 
 `@devleo10/nightwatch` depends on `@devleo10/nightwatch-core`, so one install is enough for the worker.
@@ -60,16 +70,15 @@ docker compose up -d
 npm run dev
 ```
 
-Open the URL Next prints. The page shows the latest decisions for one generated queue. A refresh clears that list. Switch to Live when the worker should delay, dead-letter, or escalate for real.
+Open the URL Next prints. Put `TYPESAFE_API_KEY` in `.env` at the repo root to let Jev take the errors rules miss. Each row shows why the queue did or did not move. The list holds the latest 30 decisions for one generated queue, and a refresh clears it. Switch to Live when the worker should delay, dead-letter, or escalate for real.
 
 ## Setup traps
 
-- Dry run defaults to `true`. A correct decision still leaves the job to BullMQ.
-- Confidence under `0.8` escalates and rethrows. `RulesProvider` uses `0.5` when no rule matches, so unknown errors are not auto-handled.
+- Dry run defaults to `true`. A correct decision still leaves the job to BullMQ. The worker logs this once at startup.
+- Confidence under `0.8` escalates and rethrows. `RulesProvider` uses `0.5` when no rule matches, so unknown errors are not auto-handled without Jev.
 - `retry_later` needs BullMQ's lock token. Sandboxed processors must call `withTriage` inside the processor file.
 - `__nightwatch` on the job data counts auto retries. Do not strip it.
 - The decision log is in memory (500 records) unless you pass `JsonlDecisionStore` or `TRIAGE_DECISION_LOG`.
-- Without `TYPESAFE_API_KEY`, use `RulesProvider`. With the key, `JevProvider` sends one Choice. A bad response leaves the job to BullMQ.
 - `redact.keys` covers metadata and payload summaries, not error messages.
 - `GET /decisions` is public until you set `TRIAGE_API_KEY`.
 
@@ -78,7 +87,7 @@ Open the URL Next prints. The page shows the latest decisions for one generated 
 - [Quick start](docs/quick-start.md)
 - [Policies and safety](docs/policies.md)
 - [Custom rules](docs/custom-rules.md)
-- [HTTP and Jev providers](docs/providers.md)
+- [Jev, HTTP, and cascade providers](docs/providers.md)
 - [HTTP server](docs/server.md)
 - [FAQ](docs/faq.md)
 - [Security](SECURITY.md)

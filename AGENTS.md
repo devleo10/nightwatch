@@ -4,7 +4,7 @@ Read this before editing a consumer app or this repo. Nightwatch classifies a fa
 
 Repository: https://github.com/devleo10/nightwatch
 
-Published packages, version 0.1.1:
+Packages, version 0.2.0 (`CascadeProvider`, suggested timeouts, and `nightwatch scan` are new in 0.2.0):
 
 - `@devleo10/nightwatch` imports from `@devleo10/nightwatch/bullmq`
 - `@devleo10/nightwatch-core` is the classifier, policy, and decision log. The BullMQ package depends on it.
@@ -20,14 +20,28 @@ npm install @devleo10/nightwatch bullmq
 
 ```ts
 import { Worker } from "bullmq"
-import { RulesProvider, withTriage } from "@devleo10/nightwatch/bullmq"
+import { CascadeProvider, JevProvider, RulesProvider, withTriage } from "@devleo10/nightwatch/bullmq"
 
 const worker = new Worker("emails", withTriage(async (job) => {
-  await sendEmail(job.data)
+ await sendEmail(job.data)
 }, {
-  classifier: new RulesProvider(),
+ classifier: process.env.TYPESAFE_API_KEY
+  ? new CascadeProvider([
+     new RulesProvider(),
+     new JevProvider({ headers: { authorization: `Bearer ${process.env.TYPESAFE_API_KEY}` } }),
+    ])
+  : new RulesProvider(),
+ redact: { keys: ["token", "authorization", "email"] },
 }))
 ```
+
+Before wiring anything, you can show the user what Nightwatch would do with their existing failed jobs. This only reads Redis:
+
+```bash
+npx @devleo10/nightwatch scan redis://localhost:6379 --queue emails
+```
+
+It uses rules only unless `TYPESAFE_API_KEY` is set. Add `--json` for one JSON object per job.
 
 Wrap the processor that already throws on failure. Do not add a second worker. Call `attachTriage(worker, options)` only for an in-process processor, once, after `new Worker`. If the processor lives in a sandboxed file, call `withTriage` inside that file. BullMQ will not pass the lock token across the sandbox boundary, and `retry_later` needs that token.
 
@@ -42,7 +56,7 @@ These are the traps. A confident classifier result still leaves the job alone un
 | `policy.dryRun` | `true` | Decisions are logged. BullMQ retries as usual. Set `dryRun: false` only when the user wants the queue to change. |
 | `policy.minConfidence` | `0.8` | Below this, the outcome is `fallback`, `escalated` is true, and the original error is rethrown. |
 | `policy.maxAutoRetries` | `3` | Caps applied `retry_now` and `retry_later`. Stored on the job as `__nightwatch.autoRetries`. Do not delete that field when replacing job data. |
-| `policy.timeoutMs` | `1500` | A slow or thrown classifier becomes `fallback`. The original error is rethrown. |
+| `policy.timeoutMs` | `1500`, or the classifier's `suggestedTimeoutMs` | A slow or thrown classifier becomes `fallback`. The original error is rethrown. `JevProvider` suggests 9000 and `CascadeProvider` more. Do not set 1500 by hand when Jev is in the chain. |
 | `policy.neverAutoHandle` | `[]` | Job names or `/regex/` strings. These jobs are never auto-handled, even when dry run is off. |
 | Unmatched rules | `page_human` at `0.5` | `RulesProvider` returns this when nothing matches. `0.5` is under `0.8`, so the job is left to BullMQ. |
 | Decision log | in memory, max 500 | Pass `new JsonlDecisionStore(path)` or set `TRIAGE_DECISION_LOG` to keep decisions after restart. |
@@ -52,11 +66,11 @@ These are the traps. A confident classifier result still leaves the job alone un
 
 ## Classifiers
 
-Use `RulesProvider` unless the user asked for something else. Built-in matches cover rate limits, timeouts, connection resets, 5xx, malformed JSON, validation errors, expired auth, duplicate ids, and signature failures. Custom rules are checked first. See `docs/custom-rules.md`.
+Use `CascadeProvider([new RulesProvider(), new JevProvider(...)])` when the user has a TypeSafe key, and `RulesProvider` alone when they do not. The cascade stops at the first answer at or above `below` (default 0.8), so Jev is only called for errors the rules miss. `ChainProvider` only falls through when a classifier throws, not on low confidence. Built-in matches cover rate limits, timeouts, connection resets, 5xx, malformed JSON, validation errors, expired auth, duplicate ids, and signature failures. Custom rules are checked first. See `docs/custom-rules.md`.
 
 `HttpProvider` posts the failure JSON and expects `{ decision, confidence, reason, delayMs?, provider? }`. `decision` is `retry_now`, `retry_later`, `dead_letter`, or `page_human`.
 
-`JevProvider` is the showcase path. It posts one System One Choice to `https://api.typesafe.ai/v1/systemone` (`jev-latest`) and reads `answers.action.choice` plus `answers.action.confidence`. Pass `headers.authorization` as `Bearer $TYPESAFE_API_KEY`. Do not invent a second request shape. A thrown call becomes `fallback` and BullMQ keeps the job. The demo uses Jev when `TYPESAFE_API_KEY` is set, and falls through to `RulesProvider` if that call fails.
+`JevProvider` posts one System One Choice to `https://api.typesafe.ai/v1/systemone` (`jev-latest`) and reads `answers.action.choice` plus `answers.action.confidence`. Pass `headers.authorization` as `Bearer $TYPESAFE_API_KEY`. Do not invent a second request shape. A thrown call becomes `fallback` and BullMQ keeps the job. The demo asks rules first and Jev for the rest when `TYPESAFE_API_KEY` is set.
 
 ## Secrets
 

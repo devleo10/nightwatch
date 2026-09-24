@@ -1,4 +1,4 @@
-# HTTP and Jev providers
+# Jev, HTTP, and cascade providers
 
 Anything that accepts a failure JSON body and returns a result can sit behind `HttpProvider`.
 
@@ -51,4 +51,21 @@ const classifier = new JevProvider({
 })
 ```
 
-A missing key, a non-JSON body, or an unknown label throws. Policy then leaves the job to BullMQ. Put `RulesProvider` after `JevProvider` in a `ChainProvider` if you want that fallback inside the classifier instead.
+A missing key, a non-JSON body, or an unknown label throws. Policy then leaves the job to BullMQ.
+
+A Jev call often takes more than a second. `JevProvider` suggests a policy timeout of its own timeout plus one second (9000 by default), and `withTriage` uses that when `policy.timeoutMs` is unset. If you set `policy.timeoutMs` yourself, leave room for the call.
+
+## Rules first, then Jev
+
+`CascadeProvider` asks each classifier in order and stops at the first answer at or above `below` (default 0.8). This is the recommended setup: the built-in rules answer known errors in under a millisecond, and Jev is called only for the ones they miss.
+
+```ts
+import { CascadeProvider, JevProvider, RulesProvider } from "@devleo10/nightwatch-core"
+
+const classifier = new CascadeProvider([
+  new RulesProvider(),
+  new JevProvider({ headers: { authorization: `Bearer ${process.env.TYPESAFE_API_KEY}` } }),
+])
+```
+
+When nobody clears the bar, the last answer is returned, so an unsure Jev answer shows up in the decision log instead of the rules' "No rule matched". A classifier that throws is skipped. `ChainProvider` is different: it moves on only when a classifier throws or times out, never on low confidence.
