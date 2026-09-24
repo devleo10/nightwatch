@@ -1,6 +1,6 @@
 {
   "name": "@devleo10/nightwatch-http",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Optional HTTP service for Nightwatch classification.",
   "license": "MIT",
   "repository": {
@@ -41,7 +41,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@devleo10/nightwatch-classifier": "0.1.0",
+    "@devleo10/nightwatch-classifier": "0.1.1",
     "express": "^4.21.2",
     "zod": "^3.25.76"
   },

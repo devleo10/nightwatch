@@ -1,6 +1,6 @@
 # @devleo10/nightwatch-bullmq
 
-Wrap a BullMQ processor so a failed job can be retried, delayed, dead-lettered, or escalated. Rules answer the errors they know. TypeSafe Jev answers the rest.
+Wrap a BullMQ processor so a failed job can be retried, delayed, dead-lettered, or escalated. Rules answer the errors they know. TypeSafe Jev answers the rest. Install path replaces old `@devleo10/nightwatch/bullmq` snippets; see [migration.md](https://github.com/devleo10/nightwatch/blob/main/docs/migration.md).
 
 See what it would do with the failed jobs you already have. Read only:
 

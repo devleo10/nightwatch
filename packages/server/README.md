@@ -1,6 +1,6 @@
 # @devleo10/nightwatch-http
 
-HTTP classify endpoint. Your worker can stay in charge of BullMQ.
+HTTP classify endpoint. Your worker can stay in charge of BullMQ. Replaces deprecated `@devleo10/nightwatch-server`.
 
 ```bash
 npm install @devleo10/nightwatch-http

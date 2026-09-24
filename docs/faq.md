@@ -1,5 +1,9 @@
 # FAQ
 
+## What happened to `@devleo10/nightwatch-core` and `@devleo10/nightwatch-server`?
+
+They were renamed to `@devleo10/nightwatch-classifier` and `@devleo10/nightwatch-http`. The old names are deprecated on npm. See [Migration](migration.md).
+
 ## Does this replace BullMQ retries?
 
 No. `retry_now` rethrows so your existing `attempts` and `backoff` still apply. `retry_later` moves the job to delayed without spending an attempt. `dead_letter` stops the remaining attempts. If triage is skipped, the original error is rethrown and BullMQ behaves as if the wrapper was not there.

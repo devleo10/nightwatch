@@ -1,6 +1,6 @@
 # @devleo10/nightwatch-classifier
 
-Classifier interface, safety policy, and decision log for Nightwatch.
+Classifier interface, safety policy, and decision log for Nightwatch. Replaces deprecated `@devleo10/nightwatch-core`.
 
 ```bash
 npm install @devleo10/nightwatch-classifier

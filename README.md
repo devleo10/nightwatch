@@ -60,6 +60,8 @@ withTriage(processor, {
 
 `@devleo10/nightwatch-bullmq` depends on `@devleo10/nightwatch-classifier`, so one install is enough for the worker.
 
+**Renamed from `@devleo10/nightwatch-core` or `@devleo10/nightwatch-server`?** Those packages are deprecated on npm. Use the names in the table above. [Migration guide](docs/migration.md).
+
 ## Run the demo
 
 ```bash
@@ -87,6 +89,7 @@ Open the URL Next prints. Put `TYPESAFE_API_KEY` in `.env` at the repo root to l
 
 ## Docs
 
+- [Migration from old package names](docs/migration.md)
 - [Quick start](docs/quick-start.md)
 - [Policies and safety](docs/policies.md)
 - [Custom rules](docs/custom-rules.md)

@@ -4,13 +4,13 @@ Read this before editing a consumer app or this repo. Nightwatch classifies a fa
 
 Repository: https://github.com/devleo10/nightwatch
 
-Packages, all at version 0.1.0:
+Packages, all at version 0.1.1:
 
 - `@devleo10/nightwatch-bullmq` wraps a worker and ships the `nightwatch scan` command. Install this one.
 - `@devleo10/nightwatch-classifier` is the classifier, policy, and decision log. The BullMQ package depends on it.
-- `@devleo10/nightwatch-http` is optional. Command name `nightwatch-server`.
+- `@devleo10/nightwatch-http` is optional. The published binary is still named `nightwatch-server`.
 
-Older names (`@devleo10/nightwatch`, `@devleo10/nightwatch-core`, `@devleo10/nightwatch-server`) were removed from npm. Do not install them.
+Deprecated on npm (do not use in new code): `@devleo10/nightwatch-core` → `nightwatch-classifier`, `@devleo10/nightwatch-server` → `nightwatch-http`. `@devleo10/nightwatch` was never published; old snippets used `@devleo10/nightwatch/bullmq` → `nightwatch-bullmq`. See [docs/migration.md](docs/migration.md).
 
 ## Add it to another project
 
@@ -120,4 +120,4 @@ npm run dev
 
 Unit tests do not need Redis. `npm run test:integration` does, on `127.0.0.1:6379`. `npm run dev` builds the packages and starts the demo. The dashboard URL is the one Next prints. Dry run is on. Live mode is the switch that lets the worker delay, dead-letter, or escalate.
 
-Further detail: `docs/quick-start.md`, `docs/policies.md`, `docs/providers.md`, `docs/server.md`, `docs/faq.md`, `SECURITY.md`.
+Further detail: `docs/quick-start.md`, `docs/migration.md`, `docs/policies.md`, `docs/providers.md`, `docs/server.md`, `docs/faq.md`, `SECURITY.md`.

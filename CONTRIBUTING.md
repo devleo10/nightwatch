@@ -16,7 +16,7 @@ Unit tests do not need Redis. The BullMQ integration test does, on `127.0.0.1:63
 
 ## Changesets
 
-User facing changes in `packages/core`, `packages/bullmq`, or `packages/server` need a changeset:
+User facing changes in `packages/core` (`@devleo10/nightwatch-classifier`), `packages/bullmq` (`@devleo10/nightwatch-bullmq`), or `packages/server` (`@devleo10/nightwatch-http`) need a changeset:
 
 ```bash
 npx changeset
