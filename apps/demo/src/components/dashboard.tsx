@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import type { FailureEvent, Speed, Stats } from "@queue-triage/shared"
+import type { FailureEvent, Speed, Stats } from "@/types"
 import { Pause, Play } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -20,13 +20,14 @@ const EMPTY_STATS: Stats = {
   provider: "rules",
   producerRunning: true,
   speed: "normal",
+  dryRun: true,
 }
 
 export function Dashboard() {
   const [stats, setStats] = useState<Stats>(EMPTY_STATS)
   const [events, setEvents] = useState<FailureEvent[]>([])
   const [connection, setConnection] = useState<"live" | "reconnecting">("reconnecting")
-  const [busy, setBusy] = useState<"run" | "speed" | null>(null)
+  const [busy, setBusy] = useState<"run" | "speed" | "mode" | null>(null)
 
   const loadStats = useCallback(async () => {
     try {
@@ -39,9 +40,12 @@ export function Dashboard() {
   }, [])
 
   useEffect(() => {
-    void loadStats()
+    const kick = window.setTimeout(() => void loadStats(), 0)
     const poll = window.setInterval(() => void loadStats(), 2000)
-    return () => window.clearInterval(poll)
+    return () => {
+      window.clearTimeout(kick)
+      window.clearInterval(poll)
+    }
   }, [loadStats])
 
   useEffect(() => {
@@ -104,6 +108,22 @@ export function Dashboard() {
     }
   }
 
+  async function setDryRun(dryRun: boolean) {
+    setBusy("mode")
+    try {
+      const response = await fetch(`${API_URL}/mode`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dryRun }),
+      })
+      if (response.ok) setStats((await response.json()) as Stats)
+    } catch {
+      setConnection("reconnecting")
+    } finally {
+      setBusy(null)
+    }
+  }
+
   const autoRate =
     stats.totalFailures === 0 ? 0 : Math.round((stats.autoResolved / stats.totalFailures) * 100)
 
@@ -140,6 +160,27 @@ export function Dashboard() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <div className="flex rounded-lg bg-white/5 p-1 ring-1 ring-white/10">
+            {([
+              ["Dry run", true],
+              ["Live", false],
+            ] as const).map(([label, dryRun]) => (
+              <button
+                key={label}
+                type="button"
+                disabled={busy === "mode"}
+                onClick={() => void setDryRun(dryRun)}
+                className={cn(
+                  "h-8 rounded-md px-3 font-mono text-xs tracking-wide uppercase transition-colors",
+                  stats.dryRun === dryRun
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <div className="flex rounded-lg bg-white/5 p-1 ring-1 ring-white/10">
             {(["normal", "fast"] as const).map((speed) => (
               <button

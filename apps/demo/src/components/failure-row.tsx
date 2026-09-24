@@ -1,9 +1,9 @@
 "use client"
 
-import type { Decision, FailureEvent } from "@queue-triage/shared"
+import type { FailureEvent, FeedDecision } from "@/types"
 import { cn } from "cn"
 
-const DECISION_STYLE: Record<Decision, { badge: string; bar: string }> = {
+const DECISION_STYLE: Record<FeedDecision, { badge: string; bar: string }> = {
   retry_now: {
     badge: "bg-emerald-400/15 text-emerald-300 ring-emerald-400/40",
     bar: "bg-emerald-400",
@@ -20,6 +20,10 @@ const DECISION_STYLE: Record<Decision, { badge: string; bar: string }> = {
     badge: "bg-violet-400/15 text-violet-200 ring-violet-400/40",
     bar: "bg-violet-400",
   },
+  fallback: {
+    badge: "bg-white/10 text-foreground/80 ring-white/20",
+    bar: "bg-white/40",
+  },
 }
 
 export function FailureRow({ event }: { event: FailureEvent }) {
@@ -30,15 +34,17 @@ export function FailureRow({ event }: { event: FailureEvent }) {
     <article
       className={cn(
         "row-in grid grid-cols-1 items-center gap-3 border-b border-white/10 px-4 py-3.5 md:grid-cols-[168px_minmax(0,1fr)_132px_180px_76px] md:gap-4",
-        !event.autoResolved &&
+        !event.escalated &&
+          "bg-transparent",
+        event.escalated &&
           "bg-amber-300/10 shadow-[inset_0_0_0_1px_rgba(252,211,77,0.85)]",
       )}
     >
       <div className="min-w-0">
         <p className="truncate font-mono text-sm font-medium text-foreground">{event.jobName}</p>
         <p className="mt-1 font-mono text-[11px] text-muted-foreground">
-          attempt {event.attemptNumber}
-          {!event.autoResolved ? " · escalated" : ""}
+          attempt {event.attemptNumber} · {event.provider}
+          {event.escalated ? " · escalated" : event.dryRun ? " · dry run" : event.applied ? " · applied" : ""}
         </p>
       </div>
 
