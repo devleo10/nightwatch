@@ -27,6 +27,11 @@ const FAILURES: Array<{ code: string; message: string; jobs: JobName[] }> = [
   { code: "DUPLICATE_TXN", message: "Duplicate transaction id", jobs: ["process-payment"] },
   { code: "AUTH_EXPIRED", message: "Expired auth token", jobs: ["send-email", "sync-kyc-status", "process-payment"] },
   { code: "SCHEMA_INVALID", message: "Schema validation failure", jobs: ["sync-kyc-status", "deliver-webhook", "send-email"] },
+  { code: "CARD_DECLINED", message: "Card declined by issuer: do_not_honor", jobs: ["process-payment"] },
+  { code: "MAILBOX_FULL", message: "Recipient mailbox is full, try again later", jobs: ["send-email"] },
+  { code: "MARKET_CLOSED", message: "Exchange rejected the request because the market is closed", jobs: ["fetch-market-data"] },
+  { code: "MANUAL_REVIEW", message: "KYC provider put the applicant on manual review", jobs: ["sync-kyc-status"] },
+  { code: "ENDPOINT_GONE", message: "Partner endpoint returned 410 Gone", jobs: ["deliver-webhook"] },
 ]
 
 function pick<T>(items: readonly T[]): T {

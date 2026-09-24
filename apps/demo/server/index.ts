@@ -6,7 +6,7 @@ import net from "node:net"
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import {
-  ChainProvider,
+  CascadeProvider,
   JevProvider,
   RulesProvider,
   type Classifier,
@@ -29,15 +29,9 @@ if (existsSync(envFile)) process.loadEnvFile(envFile)
 const jevKey = process.env.TYPESAFE_API_KEY
 const rules = new RulesProvider()
 const classifier: Classifier = jevKey
-  ? new ChainProvider(
-      [
-        new JevProvider({
-          headers: { authorization: `Bearer ${jevKey}` },
-          timeoutMs: 6000,
-        }),
-        rules,
-      ],
-      { timeoutMs: 7000 },
+  ? new CascadeProvider(
+      [rules, new JevProvider({ headers: { authorization: `Bearer ${jevKey}` }, timeoutMs: 6000 })],
+      { below: 0.8, timeoutMs: 7000 },
     )
   : rules
 
@@ -46,7 +40,6 @@ const policy: PolicyOptions = {
   dryRun: true,
   minConfidence: 0.8,
   maxAutoRetries: 3,
-  timeoutMs: jevKey ? 8000 : 1500,
 }
 
 const counters = {
@@ -65,7 +58,12 @@ const listeners = new Set<(event: FailureEvent) => void>()
 
 const queue = new Queue<DemoJob>(QUEUE_NAME, {
   connection,
-  defaultJobOptions: { attempts: 1, removeOnComplete: 200, removeOnFail: 200 },
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: { type: "exponential", delay: 1000 },
+    removeOnComplete: 200,
+    removeOnFail: 200,
+  },
 })
 
 function publish(record: DecisionRecord) {
@@ -151,7 +149,7 @@ function snapshot(): Stats {
     escalated: counters.escalated,
     deadLettered: counters.deadLettered,
     averageLatencyMs: counters.totalFailures === 0 ? 0 : Math.round(counters.latencySum / counters.totalFailures),
-    provider: jevKey ? "jev" : "rules",
+    provider: jevKey ? "rules, then jev" : "rules",
     producerRunning,
     speed,
     dryRun: policy.dryRun !== false,

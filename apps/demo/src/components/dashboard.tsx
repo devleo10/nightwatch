@@ -155,7 +155,7 @@ export function Dashboard() {
             </span>
           </div>
           <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-            Failed jobs, judged by Jev. The queue moves only when the call is sure enough.
+            Rules take the errors they know. Jev takes the rest. The queue moves only when the call is sure enough.
           </p>
         </div>
 

@@ -53,6 +53,11 @@ export function FailureRow({ event }: { event: FailureEvent }) {
         <p className="mt-1 truncate font-mono text-[11px] text-muted-foreground">
           {event.errorCode} · {event.payloadSummary}
         </p>
+        {event.reason ? (
+          <p className="mt-1 truncate text-[11px] text-foreground/60" title={event.reason}>
+            {event.reason}
+          </p>
+        ) : null}
       </div>
 
       <div>
