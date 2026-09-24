@@ -4,7 +4,7 @@ Read this before editing a consumer app or this repo. Nightwatch classifies a fa
 
 Repository: https://github.com/devleo10/nightwatch
 
-Packages, version 0.2.0 (`CascadeProvider`, suggested timeouts, and `nightwatch scan` are new in 0.2.0):
+Packages, version 0.2.0 (new in 0.2.0: `CascadeProvider`, suggested timeouts, `nightwatch scan`, `retrySafe`, `onDeadLetter`, `isFinalFailure`, and `redact.patterns`):
 
 - `@devleo10/nightwatch` imports from `@devleo10/nightwatch/bullmq`
 - `@devleo10/nightwatch-core` is the classifier, policy, and decision log. The BullMQ package depends on it.
@@ -12,7 +12,7 @@ Packages, version 0.2.0 (`CascadeProvider`, suggested timeouts, and `nightwatch 
 
 ## Add it to another project
 
-Requires Node.js 20+ and BullMQ 5+.
+Requires Node.js 20+ and BullMQ 5+. Bun 1.4 also works: `withTriage`, `retry_later`, and `dead_letter` were checked against a live worker.
 
 ```bash
 npm install @devleo10/nightwatch bullmq
@@ -62,7 +62,11 @@ These are the traps. A confident classifier result still leaves the job alone un
 | Decision log | in memory, max 500 | Pass `new JsonlDecisionStore(path)` or set `TRIAGE_DECISION_LOG` to keep decisions after restart. |
 | Demo feed | last 30 events in the browser | Refresh clears it. It is one demo queue named `nightwatch`, not a history of every failed queue. |
 
-`retry_now` rethrows the original error. If the job was queued with `attempts: 1`, BullMQ will not retry it. `retry_later` calls `job.moveToDelayed` and throws `DelayedError`, which does not spend an attempt. `dead_letter` throws `UnrecoverableError` and stops remaining attempts. `page_human` calls `onEscalate` when you passed one, then rethrows.
+`retry_now` rethrows the original error. If the job was queued with `attempts: 1`, BullMQ will not retry it. `retry_later` calls `job.moveToDelayed` and throws `DelayedError`, which does not spend an attempt. `dead_letter` calls `onDeadLetter` when you passed one, then throws `UnrecoverableError` and stops remaining attempts. `page_human` calls `onEscalate` when you passed one, then rethrows.
+
+Check existing `failed` handlers before turning dry run off. A handler that marks a row failed only when `job.attemptsMade === job.opts.attempts` will miss a dead-lettered job, because BullMQ stops early. Replace that check with `isFinalFailure(job, error)` from `@devleo10/nightwatch/bullmq`.
+
+If a processor can fail after a side effect it must not repeat (a message sent, a charge made), pass `retrySafe: (job, error) => boolean`. When it returns false, Nightwatch never applies `retry_now` or `retry_later` and the record is marked escalated. BullMQ's own `attempts` still apply, so the processor must still be idempotent or the job must use `attempts: 1`.
 
 ## Classifiers
 
@@ -74,7 +78,16 @@ Use `CascadeProvider([new RulesProvider(), new JevProvider(...)])` when the user
 
 ## Secrets
 
-Set `redact: { keys: ["token", "authorization", "email"] }` before any `HttpProvider` or `JevProvider` call. Redaction covers metadata and `payloadSummary`. It does not rewrite `errorMessage`. Do not put secrets in `Error` messages.
+Set `redact` before any `HttpProvider` or `JevProvider` call. `keys` hides named fields in metadata and `payloadSummary`, and `key: value` or `key=value` text in `errorMessage`. `patterns` replaces regex matches in all three. Use the built-in `REDACT_PATTERNS.email`, `.phone`, and `.longNumber` (six or more digits, such as chat ids) when error text from a vendor can carry them:
+
+```ts
+redact: {
+ keys: ["token", "authorization", "email", "userId"],
+ patterns: [REDACT_PATTERNS.email, REDACT_PATTERNS.phone, REDACT_PATTERNS.longNumber],
+}
+```
+
+Rules match on the redacted message, so do not redact words a rule needs. `nightwatch scan` always hides emails and phone numbers.
 
 `GET /decisions` is open unless `TRIAGE_API_KEY` is set. Do not expose that route without the key. The demo generates fake jobs. Do not point it at a queue that holds customer data.
 

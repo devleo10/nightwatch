@@ -79,7 +79,9 @@ Open the URL Next prints. Put `TYPESAFE_API_KEY` in `.env` at the repo root to l
 - `retry_later` needs BullMQ's lock token. Sandboxed processors must call `withTriage` inside the processor file.
 - `__nightwatch` on the job data counts auto retries. Do not strip it.
 - The decision log is in memory (500 records) unless you pass `JsonlDecisionStore` or `TRIAGE_DECISION_LOG`.
-- `redact.keys` covers metadata and payload summaries, not error messages.
+- Dead-lettering stops BullMQ early. A `failed` handler that waits for `attemptsMade === attempts` will never fire its last-attempt branch. Use `isFinalFailure(job, error)`.
+- If a job can fail after a side effect it must not repeat, pass `retrySafe`. Nightwatch then adds no retry, but BullMQ's own `attempts` still apply.
+- `redact.keys` hides named fields. Add `redact.patterns` (for example `REDACT_PATTERNS.email` and `.phone`) to scrub error text from vendors.
 - `GET /decisions` is public until you set `TRIAGE_API_KEY`.
 
 ## Docs

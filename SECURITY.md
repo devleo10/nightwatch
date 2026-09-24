@@ -15,7 +15,7 @@ withTriage(processor, {
 })
 ```
 
-Error messages are not rewritten. Rules match on them, and a message can still leak a secret if your code puts one there. Keep secrets out of `Error` messages.
+Error messages are rewritten only for `redact.keys` written as `key: value` or `key=value`, and for `redact.patterns`. Use `REDACT_PATTERNS.email`, `.phone`, and `.longNumber` for vendor errors that echo contact details or ids. Anything else in a message is sent as is, so keep secrets out of `Error` messages.
 
 ## Logs and the HTTP API
 

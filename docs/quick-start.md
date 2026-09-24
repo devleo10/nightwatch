@@ -40,6 +40,8 @@ Checked in BullMQ 5.81.5:
 - `dead_letter` throws `UnrecoverableError`. `Job.shouldRetryJob` returns false even when attempts remain, so the job fails immediately.
 - `retry_now` rethrows the original error. BullMQ retries while `attemptsMade + 1 < attempts`, using the job's backoff.
 - `page_human` calls `onEscalate` if you passed one, then rethrows the original error.
+- `dead_letter` calls `onDeadLetter` if you passed one, then throws `UnrecoverableError`. In a `failed` handler, use `isFinalFailure(job, error)` instead of comparing `attemptsMade` to `attempts`.
+- `retrySafe: (job, error) => false` stops Nightwatch from adding a retry after a side effect.
 
 `attemptsMade` is incremented when the job finishes, not when the processor starts. The failure `attempt` sent to the classifier is `attemptsMade + 1`.
 
