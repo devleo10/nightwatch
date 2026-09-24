@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs"
 import { z } from "zod"
 import {
+  CascadeProvider,
   HttpProvider,
   JevProvider,
   JsonlDecisionStore,
@@ -17,7 +18,7 @@ const fileSchema = z
   .object({
     port: z.number().int().positive().optional(),
     apiKey: z.string().min(1).optional(),
-    classifier: z.enum(["rules", "http", "jev"]).optional(),
+    classifier: z.enum(["rules", "http", "jev", "cascade"]).optional(),
     httpUrl: z.string().url().optional(),
     headers: z.record(z.string()).optional(),
     timeoutMs: z.number().int().positive().optional(),
@@ -60,9 +61,9 @@ export function loadServerConfig(env: NodeJS.ProcessEnv = process.env): ServerCo
   }
 
   const classifierName = env.TRIAGE_CLASSIFIER ?? file.classifier ?? "rules"
-  if (!["rules", "http", "jev"].includes(classifierName)) {
+  if (!["rules", "http", "jev", "cascade"].includes(classifierName)) {
     throw new Error(
-      `TRIAGE_CLASSIFIER must be rules, http, or jev. Received "${classifierName}".`,
+      `TRIAGE_CLASSIFIER must be rules, http, jev, or cascade. Received "${classifierName}".`,
     )
   }
 
@@ -99,15 +100,22 @@ export function loadServerConfig(env: NodeJS.ProcessEnv = process.env): ServerCo
     if (!hasAuth && env.TYPESAFE_API_KEY) {
       jevHeaders.authorization = `Bearer ${env.TYPESAFE_API_KEY}`
     }
-    classifier = new JevProvider({
+    const jev = new JevProvider({
       url: httpUrl,
       headers: jevHeaders,
       timeoutMs: timeoutMs ?? 8000,
     })
+    classifier =
+      classifierName === "cascade"
+        ? new CascadeProvider([new RulesProvider(), jev], { timeoutMs: (timeoutMs ?? 8000) + 1000 })
+        : jev
   }
 
   const policyInput: Record<string, unknown> = {
     ...(file.policy && typeof file.policy === "object" ? file.policy : {}),
+  }
+  if ((classifierName === "jev" || classifierName === "cascade") && policyInput.timeoutMs === undefined) {
+    policyInput.timeoutMs = (timeoutMs ?? 8000) + 2000
   }
   if (env.TRIAGE_MIN_CONFIDENCE) policyInput.minConfidence = Number(env.TRIAGE_MIN_CONFIDENCE)
   if (env.TRIAGE_MAX_AUTO_RETRIES) policyInput.maxAutoRetries = Number(env.TRIAGE_MAX_AUTO_RETRIES)
