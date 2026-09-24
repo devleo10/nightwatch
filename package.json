@@ -6,10 +6,10 @@
     "apps/*"
   ],
   "scripts": {
-    "build": "npm run build -w @devleo10/nightwatch-core && npm run build -w @devleo10/nightwatch && npm run build -w @devleo10/nightwatch-server",
-    "typecheck": "npm run typecheck -w @devleo10/nightwatch-core && npm run typecheck -w @devleo10/nightwatch && npm run typecheck -w @devleo10/nightwatch-server",
-    "test": "npm run test -w @devleo10/nightwatch-core && npm run test -w @devleo10/nightwatch",
-    "test:integration": "npm run test:integration -w @devleo10/nightwatch",
+    "build": "npm run build -w @devleo10/nightwatch-classifier && npm run build -w @devleo10/nightwatch-bullmq && npm run build -w @devleo10/nightwatch-http",
+    "typecheck": "npm run typecheck -w @devleo10/nightwatch-classifier && npm run typecheck -w @devleo10/nightwatch-bullmq && npm run typecheck -w @devleo10/nightwatch-http",
+    "test": "npm run test -w @devleo10/nightwatch-classifier && npm run test -w @devleo10/nightwatch-bullmq",
+    "test:integration": "npm run test:integration -w @devleo10/nightwatch-bullmq",
     "lint": "npm run typecheck && npm run lint -w @devleo10/nightwatch-demo",
     "dev": "npm run build && npm run dev -w @devleo10/nightwatch-demo",
     "changeset": "changeset"

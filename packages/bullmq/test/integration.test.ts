@@ -1,7 +1,7 @@
 import net from "node:net"
 import { Queue, QueueEvents, Worker, type ConnectionOptions, type Job } from "bullmq"
 import { afterEach, beforeAll, describe, expect, it } from "vitest"
-import { MemoryDecisionStore, type Classifier, type Result } from "@devleo10/nightwatch-core"
+import { MemoryDecisionStore, type Classifier, type Result } from "@devleo10/nightwatch-classifier"
 import { withTriage } from "../src/index.js"
 
 const redisHost = process.env.REDIS_HOST ?? "127.0.0.1"

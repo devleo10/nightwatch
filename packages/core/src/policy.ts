@@ -135,6 +135,27 @@ export function applyPolicy(input: {
   const autoRetries = input.autoRetries ?? 0
   const result = input.result
 
+  if (input.retrySafe === false) {
+    if (matchesNeverAutoHandle(input.failure.jobName, policy.neverAutoHandle)) {
+      return {
+        action: "fallback",
+        applied: false,
+        escalated: true,
+        dryRun: policy.dryRun,
+        reason: `retrySafe returned false, but job "${input.failure.jobName}" is in neverAutoHandle. Left BullMQ behavior unchanged.`,
+      }
+    }
+    return {
+      action: "dead_letter",
+      applied: !policy.dryRun,
+      escalated: true,
+      dryRun: policy.dryRun,
+      reason: policy.dryRun
+        ? "Dry run. retrySafe returned false, so Nightwatch would stop BullMQ retries and escalate."
+        : "retrySafe returned false. Stopped BullMQ retries so the side effect is not repeated, and escalated.",
+    }
+  }
+
   if (!result) {
     const classifierError = input.classifierError
     const timedOut = classifierError instanceof ClassifierTimeoutError
@@ -167,17 +188,6 @@ export function applyPolicy(input: {
       dryRun: policy.dryRun,
       delayMs: laterDelay(result, input.failure),
       reason: `Job "${input.failure.jobName}" is in neverAutoHandle. Logged the decision and left BullMQ behavior unchanged.`,
-    }
-  }
-
-  const isRetryDecision = result.decision === "retry_now" || result.decision === "retry_later"
-  if (isRetryDecision && input.retrySafe === false) {
-    return {
-      action: "fallback",
-      applied: false,
-      escalated: true,
-      dryRun: policy.dryRun,
-      reason: `${result.decision} was not applied because retrySafe returned false. Nightwatch adds no retry. BullMQ attempts still apply.`,
     }
   }
 

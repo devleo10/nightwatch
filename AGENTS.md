@@ -4,23 +4,25 @@ Read this before editing a consumer app or this repo. Nightwatch classifies a fa
 
 Repository: https://github.com/devleo10/nightwatch
 
-Packages, version 0.2.0 (new in 0.2.0: `CascadeProvider`, suggested timeouts, `nightwatch scan`, `retrySafe`, `onDeadLetter`, `isFinalFailure`, and `redact.patterns`):
+Packages, all at version 0.1.0:
 
-- `@devleo10/nightwatch` imports from `@devleo10/nightwatch/bullmq`
-- `@devleo10/nightwatch-core` is the classifier, policy, and decision log. The BullMQ package depends on it.
-- `@devleo10/nightwatch-server` is optional. Command name `nightwatch-server`.
+- `@devleo10/nightwatch-bullmq` wraps a worker and ships the `nightwatch scan` command. Install this one.
+- `@devleo10/nightwatch-classifier` is the classifier, policy, and decision log. The BullMQ package depends on it.
+- `@devleo10/nightwatch-http` is optional. Command name `nightwatch-server`.
+
+Older names (`@devleo10/nightwatch`, `@devleo10/nightwatch-core`, `@devleo10/nightwatch-server`) were removed from npm. Do not install them.
 
 ## Add it to another project
 
 Requires Node.js 20+ and BullMQ 5+. Bun 1.4 also works: `withTriage`, `retry_later`, and `dead_letter` were checked against a live worker.
 
 ```bash
-npm install @devleo10/nightwatch bullmq
+npm install @devleo10/nightwatch-bullmq bullmq
 ```
 
 ```ts
 import { Worker } from "bullmq"
-import { CascadeProvider, JevProvider, RulesProvider, withTriage } from "@devleo10/nightwatch/bullmq"
+import { CascadeProvider, JevProvider, RulesProvider, withTriage } from "@devleo10/nightwatch-bullmq"
 
 const worker = new Worker("emails", withTriage(async (job) => {
  await sendEmail(job.data)
@@ -38,7 +40,7 @@ const worker = new Worker("emails", withTriage(async (job) => {
 Before wiring anything, you can show the user what Nightwatch would do with their existing failed jobs. This only reads Redis:
 
 ```bash
-npx @devleo10/nightwatch scan redis://localhost:6379 --queue emails
+npx @devleo10/nightwatch-bullmq scan redis://localhost:6379 --queue emails
 ```
 
 It uses rules only unless `TYPESAFE_API_KEY` is set. Add `--json` for one JSON object per job.
@@ -64,7 +66,7 @@ These are the traps. A confident classifier result still leaves the job alone un
 
 `retry_now` rethrows the original error. If the job was queued with `attempts: 1`, BullMQ will not retry it. `retry_later` calls `job.moveToDelayed` and throws `DelayedError`, which does not spend an attempt. `dead_letter` calls `onDeadLetter` when you passed one, then throws `UnrecoverableError` and stops remaining attempts. `page_human` calls `onEscalate` when you passed one, then rethrows.
 
-Check existing `failed` handlers before turning dry run off. A handler that marks a row failed only when `job.attemptsMade === job.opts.attempts` will miss a dead-lettered job, because BullMQ stops early. Replace that check with `isFinalFailure(job, error)` from `@devleo10/nightwatch/bullmq`.
+Check existing `failed` handlers before turning dry run off. A handler that marks a row failed only when `job.attemptsMade === job.opts.attempts` will miss a dead-lettered job, because BullMQ stops early. Replace that check with `isFinalFailure(job, error)` from `@devleo10/nightwatch-bullmq`.
 
 If a processor can fail after a side effect it must not repeat (a message sent, a charge made), pass `retrySafe: (job, error) => boolean`. When it returns false, Nightwatch never applies `retry_now` or `retry_later` and the record is marked escalated. BullMQ's own `attempts` still apply, so the processor must still be idempotent or the job must use `attempts: 1`.
 

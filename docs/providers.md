@@ -3,7 +3,7 @@
 Anything that accepts a failure JSON body and returns a result can sit behind `HttpProvider`.
 
 ```ts
-import { HttpProvider } from "@devleo10/nightwatch-core"
+import { HttpProvider } from "@devleo10/nightwatch-classifier"
 
 const classifier = new HttpProvider({
   url: "https://classifier.internal/v1/decide",
@@ -29,7 +29,7 @@ The response must be JSON:
 `ChainProvider` tries classifiers in order and moves on when one throws or times out.
 
 ```ts
-import { ChainProvider, HttpProvider, RulesProvider } from "@devleo10/nightwatch-core"
+import { ChainProvider, HttpProvider, RulesProvider } from "@devleo10/nightwatch-classifier"
 
 const classifier = new ChainProvider(
   [new HttpProvider({ url: process.env.CLASSIFIER_URL! }), new RulesProvider()],
@@ -44,7 +44,7 @@ const classifier = new ChainProvider(
 Get a key from the TypeSafe dashboard, then:
 
 ```ts
-import { JevProvider } from "@devleo10/nightwatch-core"
+import { JevProvider } from "@devleo10/nightwatch-classifier"
 
 const classifier = new JevProvider({
   headers: { authorization: `Bearer ${process.env.TYPESAFE_API_KEY}` },
@@ -60,7 +60,7 @@ A Jev call often takes more than a second. `JevProvider` suggests a policy timeo
 `CascadeProvider` asks each classifier in order and stops at the first answer at or above `below` (default 0.8). This is the recommended setup: the built-in rules answer known errors in under a millisecond, and Jev is called only for the ones they miss.
 
 ```ts
-import { CascadeProvider, JevProvider, RulesProvider } from "@devleo10/nightwatch-core"
+import { CascadeProvider, JevProvider, RulesProvider } from "@devleo10/nightwatch-classifier"
 
 const classifier = new CascadeProvider([
   new RulesProvider(),

@@ -5,12 +5,12 @@ The defaults that leave a queue unchanged are listed in [AGENTS.md](../AGENTS.md
 Requires Node.js 20 or newer and BullMQ 5 or newer. The adapter was checked against BullMQ 5.81.5.
 
 ```bash
-npm install @devleo10/nightwatch bullmq
+npm install @devleo10/nightwatch-bullmq bullmq
 ```
 
 ```ts
 import { Worker } from "bullmq"
-import { RulesProvider, withTriage } from "@devleo10/nightwatch/bullmq"
+import { RulesProvider, withTriage } from "@devleo10/nightwatch-bullmq"
 
 const worker = new Worker("emails", withTriage(async (job) => {
   await sendEmail(job.data)
@@ -25,7 +25,7 @@ const worker = new Worker("emails", withTriage(async (job) => {
 You can also wrap a worker that already exists:
 
 ```ts
-import { attachTriage } from "@devleo10/nightwatch/bullmq"
+import { attachTriage } from "@devleo10/nightwatch-bullmq"
 
 attachTriage(worker, { classifier: new RulesProvider() })
 ```

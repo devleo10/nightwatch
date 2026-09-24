@@ -2,7 +2,7 @@ import type { Failure } from "./types.js"
 
 export const REDACT_PATTERNS = {
   email: /[^\s@"'<>(),;:]+@[^\s@"'<>(),;:]+\.[a-z]{2,}/gi,
-  phone: /\+?\d[\d\s().-]{7,}\d/g,
+  phone: /(?<![\w.:-])(?!\d{4}-\d{2}-\d{2})[+-]?\(?(?=(?:\d[\s()-]{0,2}){10,15}(?!\d))(?:\d[\s()-]{0,2}){9,14}\d(?![\d.:])/g,
   longNumber: /-?\b\d{6,}\b/g,
 } as const
 

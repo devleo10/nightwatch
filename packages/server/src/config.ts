@@ -12,7 +12,7 @@ import {
   type Classifier,
   type DecisionStore,
   type PolicyOptions,
-} from "@devleo10/nightwatch-core"
+} from "@devleo10/nightwatch-classifier"
 
 const fileSchema = z
   .object({

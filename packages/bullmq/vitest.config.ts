@@ -4,7 +4,7 @@ import { defineConfig } from "vitest/config"
 export default defineConfig({
   resolve: {
     alias: {
-      "@devleo10/nightwatch-core": path.resolve(__dirname, "../core/src/index.ts"),
+      "@devleo10/nightwatch-classifier": path.resolve(__dirname, "../core/src/index.ts"),
     },
   },
   test: {

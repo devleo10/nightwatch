@@ -3,7 +3,7 @@
 `RulesProvider` has built in matches for rate limits, timeouts, connection resets, 5xx responses, malformed JSON, validation errors, expired auth, duplicate ids, and signature failures. Your rules are checked first.
 
 ```ts
-import { RulesProvider } from "@devleo10/nightwatch/bullmq"
+import { RulesProvider } from "@devleo10/nightwatch-bullmq"
 
 const classifier = new RulesProvider({
   rules: [

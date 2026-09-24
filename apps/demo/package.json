@@ -9,8 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@devleo10/nightwatch": "0.2.0",
-    "@devleo10/nightwatch-core": "0.2.0",
+    "@devleo10/nightwatch-bullmq": "0.1.0",
+    "@devleo10/nightwatch-classifier": "0.1.0",
     "@base-ui/react": "^1.8.0",
     "bullmq": "^5.58.5",
     "class-variance-authority": "^0.7.1",

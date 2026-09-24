@@ -59,26 +59,30 @@ describe("applyPolicy", () => {
     expect(outcome.reason).toMatch(/neverAutoHandle/)
   })
 
-  it("adds no retry when the job says retrying is not safe", () => {
+  it("stops retries and escalates when the job says retrying is not safe", () => {
     const outcome = applyPolicy({
       failure,
-      result: result({ decision: "retry_now" }),
+      result: null,
       options: { dryRun: false },
       retrySafe: false,
     })
-    expect(outcome.applied).toBe(false)
-    expect(outcome.escalated).toBe(true)
+    expect(outcome).toMatchObject({ action: "dead_letter", applied: true, escalated: true })
     expect(outcome.reason).toMatch(/retrySafe/)
   })
 
-  it("still dead letters when retrying is not safe", () => {
+  it("only logs an unsafe retry in dry run", () => {
+    const outcome = applyPolicy({ failure, result: null, retrySafe: false })
+    expect(outcome).toMatchObject({ action: "dead_letter", applied: false, dryRun: true })
+  })
+
+  it("leaves an unsafe job in neverAutoHandle to BullMQ", () => {
     const outcome = applyPolicy({
       failure,
-      result: result({ decision: "dead_letter" }),
-      options: { dryRun: false },
+      result: null,
+      options: { dryRun: false, neverAutoHandle: ["send-email"] },
       retrySafe: false,
     })
-    expect(outcome).toMatchObject({ applied: true, action: "dead_letter" })
+    expect(outcome).toMatchObject({ action: "fallback", applied: false })
   })
 
   it("stops auto retries after maxAutoRetries", () => {

@@ -1,7 +1,8 @@
 {
-  "name": "@devleo10/nightwatch",
-  "version": "0.2.0",
-  "description": "BullMQ adapter for Nightwatch. Import it from @devleo10/nightwatch/bullmq.",
+  "name": "@devleo10/nightwatch-bullmq",
+  "version": "0.1.0",
+  "description": "Decide what to do with a failed BullMQ job: rules first, TypeSafe Jev for the rest. Includes the nightwatch scan command.",
+  "keywords": ["bullmq", "queue", "retry", "dead-letter", "jev", "typesafe", "triage"],
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -27,16 +28,6 @@
         "types": "./dist/index.d.ts",
         "default": "./dist/index.cjs"
       }
-    },
-    "./bullmq": {
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      },
-      "require": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.cjs"
-      }
     }
   },
   "engines": {
@@ -52,7 +43,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@devleo10/nightwatch-core": "0.2.0"
+    "@devleo10/nightwatch-classifier": "0.1.0"
   },
   "peerDependencies": {
     "bullmq": ">=5.0.0"

@@ -12,7 +12,7 @@ import {
   type Failure,
   type PolicyOutcome,
   type Result,
-} from "@devleo10/nightwatch-core"
+} from "@devleo10/nightwatch-classifier"
 import { failureFromJob, NIGHTWATCH_STATE_KEY } from "./index.js"
 
 const USAGE = `Usage: nightwatch scan [redis-url] --queue <name> [options]

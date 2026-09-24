@@ -11,9 +11,9 @@ import {
   RulesProvider,
   type Classifier,
   type PolicyOptions,
-} from "@devleo10/nightwatch-core"
-import { withTriage, type TriageOptions } from "@devleo10/nightwatch/bullmq"
-import type { DecisionRecord } from "@devleo10/nightwatch-core"
+} from "@devleo10/nightwatch-classifier"
+import { withTriage, type TriageOptions } from "@devleo10/nightwatch-bullmq"
+import type { DecisionRecord } from "@devleo10/nightwatch-classifier"
 import { createDemoJob, type DemoJob } from "./jobs.js"
 import type { FailureEvent, Speed, Stats } from "../src/types.js"
 

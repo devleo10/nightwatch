@@ -4,12 +4,12 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY packages/core/package.json packages/core/package.json
 COPY packages/server/package.json packages/server/package.json
-RUN npm ci --workspace @devleo10/nightwatch-server --include-workspace-root
+RUN npm ci --workspace @devleo10/nightwatch-http --include-workspace-root
 
 COPY packages/core packages/core
 COPY packages/server packages/server
 COPY tsconfig.base.json tsconfig.base.json
-RUN npm run build -w @devleo10/nightwatch-core && npm run build -w @devleo10/nightwatch-server
+RUN npm run build -w @devleo10/nightwatch-classifier && npm run build -w @devleo10/nightwatch-http
 
 ENV PORT=4000
 EXPOSE 4000

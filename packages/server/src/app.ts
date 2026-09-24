@@ -11,7 +11,7 @@ import {
   type DecisionStore,
   type PolicyOptions,
   type Result,
-} from "@devleo10/nightwatch-core"
+} from "@devleo10/nightwatch-classifier"
 
 export type TriageServerOptions = {
   classifier: Classifier

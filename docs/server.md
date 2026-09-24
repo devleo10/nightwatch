@@ -1,10 +1,10 @@
 # HTTP server
 
-`@devleo10/nightwatch-server` exposes classification without embedding the library in a worker. Your app can `POST /classify` and apply the returned plan itself, or use it to inspect decisions.
+`@devleo10/nightwatch-http` exposes classification without embedding the library in a worker. Your app can `POST /classify` and apply the returned plan itself, or use it to inspect decisions.
 
 ```bash
-npm install @devleo10/nightwatch-server
-npx nightwatch-server
+npm install @devleo10/nightwatch-http
+npx @devleo10/nightwatch-http
 ```
 
 | Route | Purpose |

@@ -10,7 +10,7 @@ export {
   fromJevResponse,
   readRecentDecisions,
   toJevRequest,
-} from "@devleo10/nightwatch-core"
+} from "@devleo10/nightwatch-classifier"
 export type {
   Classifier,
   Decision,
@@ -20,12 +20,13 @@ export type {
   PolicyOptions,
   Result,
   Rule,
-} from "@devleo10/nightwatch-core"
+} from "@devleo10/nightwatch-classifier"
 
 import { DelayedError, UnrecoverableError, type Job, type Processor, type Worker } from "bullmq"
 import { randomUUID } from "node:crypto"
 import {
   applyPolicy,
+  REDACT_PATTERNS,
   redactFailure,
   resolvePolicy,
   withTimeout,
@@ -35,7 +36,7 @@ import {
   type Failure,
   type PolicyOptions,
   type Result,
-} from "@devleo10/nightwatch-core"
+} from "@devleo10/nightwatch-classifier"
 
 export const NIGHTWATCH_STATE_KEY = "__nightwatch"
 
@@ -45,7 +46,8 @@ export type TriageState = {
 
 export type EscalateContext<DataType = unknown> = {
   failure: Failure
-  result: Result
+  /** null when the classifier was skipped (retrySafe returned false) or failed. */
+  result: Result | null
   job: Job<DataType>
   policy: DecisionRecord["policy"]
 }
@@ -58,7 +60,7 @@ export type TriageOptions<DataType = unknown, ResultType = unknown, NameType ext
   onDecision?: (record: DecisionRecord) => void | Promise<void>
   onEscalate?: (context: EscalateContext<DataType>) => void | Promise<void>
   onDeadLetter?: (context: EscalateContext<DataType>) => void | Promise<void>
-  /** Return false when a side effect may already have happened. Nightwatch then adds no retry. */
+  /** Return false when a side effect may already have happened. The classifier is skipped, and outside dry run the job stops with no more BullMQ attempts. */
   retrySafe?: (job: Job<DataType, ResultType, NameType>, error: Error) => boolean | Promise<boolean>
   payloadSummary?: (job: Job<DataType, ResultType, NameType>) => string | undefined
 }
@@ -135,6 +137,8 @@ export function failureFromJob(job: Job, error: Error, summary?: string): Failur
 
 let dryRunNoticeShown = false
 
+const DEFAULT_REDACT_PATTERNS: RegExp[] = [REDACT_PATTERNS.email, REDACT_PATTERNS.phone]
+
 function effectivePolicy(policy: PolicyOptions | undefined, classifier: Classifier): PolicyOptions {
   if (policy?.timeoutMs !== undefined || !classifier.suggestedTimeoutMs) return policy ?? {}
   return { ...policy, timeoutMs: classifier.suggestedTimeoutMs }
@@ -174,7 +178,7 @@ export function withTriage<DataType = unknown, ResultType = unknown, NameType ex
       const policyOptions = effectivePolicy(options.policy, options.classifier)
       const policy = resolvePolicy(policyOptions)
       const keys = options.redact?.keys ?? []
-      const patterns = options.redact?.patterns ?? []
+      const patterns = options.redact?.patterns ?? DEFAULT_REDACT_PATTERNS
       const summary = options.payloadSummary ? options.payloadSummary(job) : undefined
       const failure = redactFailure(failureFromJob(job, original, summary), keys, patterns)
       const autoRetries = readState(job.data).autoRetries
@@ -190,10 +194,12 @@ export function withTriage<DataType = unknown, ResultType = unknown, NameType ex
 
       let result: Result | null = null
       let classifierError: unknown
-      try {
-        result = await withTimeout(options.classifier.classify(failure), policy.timeoutMs)
-      } catch (error) {
-        classifierError = error
+      if (retrySafe) {
+        try {
+          result = await withTimeout(options.classifier.classify(failure), policy.timeoutMs)
+        } catch (error) {
+          classifierError = error
+        }
       }
 
       let plan = applyPolicy({
@@ -244,20 +250,15 @@ export function withTriage<DataType = unknown, ResultType = unknown, NameType ex
       }
 
       if (plan.action === "dead_letter") {
-        if (result) {
-          await runHook("onDeadLetter", () =>
-            options.onDeadLetter?.({ failure, result, job, policy: plan }),
-          )
+        await runHook("onDeadLetter", () => options.onDeadLetter?.({ failure, result, job, policy: plan }))
+        if (plan.escalated) {
+          await runHook("onEscalate", () => options.onEscalate?.({ failure, result, job, policy: plan }))
         }
         throw new UnrecoverableError(plan.reason || "nightwatch dead lettered this job")
       }
 
       if (plan.action === "page_human") {
-        if (result) {
-          await runHook("onEscalate", () =>
-            options.onEscalate?.({ failure, result, job, policy: plan }),
-          )
-        }
+        await runHook("onEscalate", () => options.onEscalate?.({ failure, result, job, policy: plan }))
         throw original
       }
 

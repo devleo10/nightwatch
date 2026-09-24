@@ -1,22 +1,22 @@
-# @devleo10/nightwatch
+# @devleo10/nightwatch-bullmq
 
 Wrap a BullMQ processor so a failed job can be retried, delayed, dead-lettered, or escalated. Rules answer the errors they know. TypeSafe Jev answers the rest.
 
 See what it would do with the failed jobs you already have. Read only:
 
 ```bash
-TYPESAFE_API_KEY=... npx @devleo10/nightwatch scan redis://localhost:6379 --queue emails
+TYPESAFE_API_KEY=... npx @devleo10/nightwatch-bullmq scan redis://localhost:6379 --queue emails
 ```
 
 Then wrap the worker:
 
 ```bash
-npm install @devleo10/nightwatch bullmq
+npm install @devleo10/nightwatch-bullmq bullmq
 ```
 
 ```ts
 import { Worker } from "bullmq"
-import { CascadeProvider, JevProvider, RulesProvider, withTriage } from "@devleo10/nightwatch/bullmq"
+import { CascadeProvider, JevProvider, RulesProvider, withTriage } from "@devleo10/nightwatch-bullmq"
 
 new Worker("emails", withTriage(async (job) => {
   await sendEmail(job.data)

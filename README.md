@@ -11,7 +11,7 @@ Agents: read [AGENTS.md](AGENTS.md) before wiring this into another app. It list
 No code changes. Read only.
 
 ```bash
-TYPESAFE_API_KEY=... npx @devleo10/nightwatch scan redis://localhost:6379 --queue emails
+TYPESAFE_API_KEY=... npx @devleo10/nightwatch-bullmq scan redis://localhost:6379 --queue emails
 ```
 
 It reads the most recent failed jobs, hides common secret keys in payloads, and prints what Nightwatch would do with each group of errors, how confident it is, and why. Leave out the key to see what rules alone would do. On a small sample of seven failures, rules handled three and rules then Jev handled five, and Jev declined a card decline at 58% instead of guessing.
@@ -21,12 +21,12 @@ It reads the most recent failed jobs, hides common secret keys in payloads, and 
 Node.js 20 or newer, BullMQ 5 or newer.
 
 ```bash
-npm install @devleo10/nightwatch bullmq
+npm install @devleo10/nightwatch-bullmq bullmq
 ```
 
 ```ts
 import { Worker } from "bullmq"
-import { CascadeProvider, JevProvider, RulesProvider, withTriage } from "@devleo10/nightwatch/bullmq"
+import { CascadeProvider, JevProvider, RulesProvider, withTriage } from "@devleo10/nightwatch-bullmq"
 
 const worker = new Worker("emails", withTriage(async (job) => {
   await sendEmail(job.data)
@@ -54,11 +54,11 @@ withTriage(processor, {
 
 | Package | Import | What it is |
 | --- | --- | --- |
-| `@devleo10/nightwatch` | `@devleo10/nightwatch/bullmq` | `withTriage()`, `attachTriage()`, and `nightwatch scan` |
-| `@devleo10/nightwatch-core` | `@devleo10/nightwatch-core` | Rules, Jev, HTTP, cascade, policy, decision log |
-| `@devleo10/nightwatch-server` | `npx nightwatch-server` | `POST /classify` and `GET /decisions` |
+| `@devleo10/nightwatch-bullmq` | `@devleo10/nightwatch-bullmq` | `withTriage()`, `attachTriage()`, and `nightwatch scan` |
+| `@devleo10/nightwatch-classifier` | `@devleo10/nightwatch-classifier` | Rules, Jev, HTTP, cascade, policy, decision log |
+| `@devleo10/nightwatch-http` | `npx @devleo10/nightwatch-http` | `POST /classify` and `GET /decisions` |
 
-`@devleo10/nightwatch` depends on `@devleo10/nightwatch-core`, so one install is enough for the worker.
+`@devleo10/nightwatch-bullmq` depends on `@devleo10/nightwatch-classifier`, so one install is enough for the worker.
 
 ## Run the demo
 

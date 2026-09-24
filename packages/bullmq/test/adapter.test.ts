@@ -1,6 +1,6 @@
 import { UnrecoverableError, type Job } from "bullmq"
 import { describe, expect, it } from "vitest"
-import type { Classifier, DecisionRecord, Decision } from "@devleo10/nightwatch-core"
+import type { Classifier, DecisionRecord, Decision } from "@devleo10/nightwatch-classifier"
 import { isFinalFailure, withTriage } from "../src/index.js"
 
 function fixed(decision: Decision): Classifier {
@@ -55,24 +55,45 @@ describe("withTriage", () => {
     expect(record.result?.provider).toBe("slow")
   })
 
-  it("adds no retry when retrySafe returns false", async () => {
+  it("stops the job without asking the classifier when retrySafe returns false", async () => {
     let record: DecisionRecord | undefined
-    const updates: unknown[] = []
-    const liveJob = { ...job, updateData: async (data: unknown) => void updates.push(data) } as unknown as Job<unknown, never>
+    let classified = false
+    let escalated = false
     const processor = withTriage(
       async () => {
         throw new Error("ETIMEDOUT after send")
       },
       {
-        classifier: fixed("retry_now"),
+        classifier: {
+          async classify() {
+            classified = true
+            return { decision: "retry_now", confidence: 1, reason: "x", latencyMs: 0, provider: "x" }
+          },
+        },
         policy: { dryRun: false },
         retrySafe: () => false,
         onDecision: (next) => void (record = next),
+        onEscalate: () => void (escalated = true),
       },
     )
-    await expect(processor(liveJob, "token")).rejects.toThrow("ETIMEDOUT after send")
-    expect(record?.policy).toMatchObject({ applied: false, action: "fallback", escalated: true })
-    expect(updates).toHaveLength(0)
+    const error = await processor(job as Job<unknown, never>, "token").catch((caught: unknown) => caught)
+    expect(error).toBeInstanceOf(UnrecoverableError)
+    expect(isFinalFailure(job, error)).toBe(true)
+    expect(classified).toBe(false)
+    expect(escalated).toBe(true)
+    expect(record?.policy).toMatchObject({ applied: true, action: "dead_letter", escalated: true })
+  })
+
+  it("hides emails and phone numbers in the error text by default", async () => {
+    let record: DecisionRecord | undefined
+    const processor = withTriage(
+      async () => {
+        throw new Error("WATI rejected +91 98765 43210 for a.user@example.com")
+      },
+      { classifier: fixed("page_human"), onDecision: (next) => void (record = next) },
+    )
+    await expect(processor(job as Job<unknown, never>, "token")).rejects.toThrow()
+    expect(record?.input.errorMessage).toBe("WATI rejected [redacted] for [redacted]")
   })
 
   it("calls onDeadLetter, and the thrown error counts as a final failure", async () => {
